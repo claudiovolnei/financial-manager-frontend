@@ -1,0 +1,52 @@
+﻿@page "/categoria"
+@inject HttpClient Http
+
+<PageTitle>Categoria</PageTitle>
+
+<h1>Categoria</h1>
+
+<p>Listagem de categorias</p>
+
+@if (categories == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nome</th>
+                <th>Categoria Id</th>                
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var subCategory in categories)
+            {
+                <tr>
+                    <td>@subCategory.Id</td>
+                    <td>@subCategory.Name</td>
+                    <td>@subCategory.AccountTypeId</td>                    
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private CategoryResponse[]? categories;
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = await Http.GetFromJsonAsync<CategoryResponse[]>("https://financial-manager.azurewebsites.net/categorias");
+    }
+
+    public record struct CategoryResponse(
+        int Id,
+        string Name,
+        int AccountTypeId,
+        DateTime CreatedAt,
+        DateTime UpdatedAt
+    );
+}

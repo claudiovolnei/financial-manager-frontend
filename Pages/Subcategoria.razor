@@ -1,0 +1,52 @@
+﻿@page "/subcategoria"
+@inject HttpClient Http
+
+<PageTitle>Subcategoria</PageTitle>
+
+<h1>Subcategoria</h1>
+
+<p>Listagem de subcategorias</p>
+
+@if (subcategories == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nome</th>
+                <th>Categoria Id</th>                
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var subCategory in subcategories)
+            {
+                <tr>
+                    <td>@subCategory.Id</td>
+                    <td>@subCategory.Name</td>
+                    <td>@subCategory.CategoryId</td>                    
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private SubCategoryResponse[]? subcategories;
+
+    protected override async Task OnInitializedAsync()
+    {
+        subcategories = await Http.GetFromJsonAsync<SubCategoryResponse[]>("https://financial-manager.azurewebsites.net/subcategorias");
+    }
+
+    public record struct SubCategoryResponse(
+    int Id,
+    string Name,
+    int CategoryId,
+    DateTime CreatedAt,
+    DateTime UpdatedAt
+);
+}
