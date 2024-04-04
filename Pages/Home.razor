@@ -1,7 +1,59 @@
 ﻿@page "/"
+@inject HttpClient Http
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Lançamentos</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Lançamentos</h1>
 
-Welcome to your new app.
+<p>Lançamentos</p>
+
+@if (transacoes == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Descrição</th>
+                <th>Valor</th>                
+                <th>Subcategoria</th>                
+                <th>Data Lançamento</th>                
+                <th>Data Pagamento</th>                
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var transacao in transacoes)
+            {
+                <tr>
+                    <td>@transacao.Id</td>
+                    <td>@transacao.Title</td>
+                    <td>@transacao.Value</td>                    
+                    <td>@transacao.SubCategoryId</td>                    
+                    <td>@transacao.DataOrder.ToShortDateString()</td>                    
+                    <td>@transacao.DatePayment?.ToShortDateString()</td>                    
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private TransactionOrderReponse[]? transacoes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        transacoes = await Http.GetFromJsonAsync<TransactionOrderReponse[]>("https://financial-manager.azurewebsites.net/transaction-order");
+    }
+
+    public record struct TransactionOrderReponse(
+        int Id,
+        string Title,
+        decimal Value,
+        int SubCategoryId,
+        DateTime DataOrder,
+        DateTime? DatePayment
+    );
+}
