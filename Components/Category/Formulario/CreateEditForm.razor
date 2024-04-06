@@ -1,0 +1,45 @@
+@using FinancialManager.Web.Components.Category.Model
+@inject HttpClient Http
+
+<MudDialog>
+    <DialogContent>
+        <MudItem xs="12" sm="7">
+            <MudTextField Label="Nome"
+                @bind-Value="model.Name"/>
+        </MudItem>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Primary" Class="ml-auto">Salvar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code{
+    [Parameter]
+    public CategoryRequest modelParameter { get; set; }
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    CategoryRequest model;
+    HttpResponseMessage? response;
+    protected override async Task OnInitializedAsync()
+    {
+        model = modelParameter;
+
+        if(model.AccountTypeId == 0)
+            model.AccountTypeId = 2;        
+    }
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    private async void Submit()
+    {
+        if(model == null || !model.Id.HasValue) 
+            response =  await Http.PostAsJsonAsync("https://financial-manager.azurewebsites.net/categorias", model);
+        else
+          response =  await Http.PutAsJsonAsync($"https://financial-manager.azurewebsites.net/categorias/{model.Id}", model);
+
+        MudDialog.Close(DialogResult.Ok<HttpResponseMessage>(response));
+
+    }
+    
+}    
