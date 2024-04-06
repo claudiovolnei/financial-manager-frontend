@@ -1,11 +1,21 @@
 ﻿@page "/categoria"
 @inject HttpClient Http
+@inject IDialogService DialogService
+@using FinancialManager.Web.Components.Category.Formulario
+@using FinancialManager.Web.Components.Category.Model
+@inject ISnackbar Snackbar
+@inject NavigationManager _navigationManager
 
 <PageTitle>Categoria</PageTitle>
 
 <h1>Categoria</h1>
 
-<p>Listagem de categorias</p>
+<MudIconButton Icon="@Icons.Material.Filled.Add" 
+            Color="Color.Primary" 
+            OnClick="CreateCategory"
+            Variant="Variant.Filled"
+            Size="Size.Large">
+</MudIconButton>
 
 @if (categories == null)
 {
@@ -19,34 +29,99 @@ else
                 <th>Id</th>
                 <th>Nome</th>
                 <th>Categoria Id</th>                
+                <th></th>                
             </tr>
         </thead>
         <tbody>
-            @foreach (var subCategory in categories)
+            @foreach (var category in categories)
             {
                 <tr>
-                    <td>@subCategory.Id</td>
-                    <td>@subCategory.Name</td>
-                    <td>@subCategory.AccountTypeId</td>                    
+                    <td>@category.Id</td>
+                    <td>@category.Name</td>
+                    <td>@category.AccountTypeId</td> 
+                    <td>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Primary" OnClick="(() => EditCategory(category))"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="(() => DeleteCategory(category.Id))"></MudIconButton>
+                    </td>                   
                 </tr>
             }
         </tbody>
     </table>
 }
 
+<MudMessageBox @ref="mbox" Title="Excluir" CancelText="Cancel">
+    <MessageContent>
+        Deseja excluir a categoria?
+    </MessageContent>
+    <YesButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteForever">Delete!</MudButton>
+    </YesButton>
+</MudMessageBox>
+
+
 @code {
     private CategoryResponse[]? categories;
+    MudMessageBox? mbox { get; set; }
+    HttpResponseMessage? response;
 
     protected override async Task OnInitializedAsync()
     {
         categories = await Http.GetFromJsonAsync<CategoryResponse[]>("https://financial-manager.azurewebsites.net/categorias");
     }
 
-    public record struct CategoryResponse(
-        int Id,
-        string Name,
-        int AccountTypeId,
-        DateTime CreatedAt,
-        DateTime UpdatedAt
-    );
+    private async Task CreateCategory()
+    {
+        var parameters = new DialogParameters();
+        parameters.Add("modelParameter", new CategoryRequest());
+        var dialog = await DialogService.Show<CreateEditForm>("Criar categoria", parameters).Result;
+
+        response = dialog.Data as HttpResponseMessage ?? null;
+
+        if (response != null) {
+            if(response.IsSuccessStatusCode) {
+                Snackbar.Add("Categoria adicionado com sucesso.", Severity.Success);
+            }
+            else {
+                Snackbar.Add("Erro ao adicionar categoria", Severity.Error);
+            }
+
+            await OnInitializedAsync();
+        }            
+   }
+    private async Task EditCategory(CategoryResponse categoryResponse)
+    {
+        var parameters = new DialogParameters();
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        parameters.Add("modelParameter", new CategoryRequest { Name = categoryResponse.Name, AccountTypeId = categoryResponse.AccountTypeId, Id = categoryResponse.Id});
+        var dialog = await DialogService.Show<CreateEditForm>("Alterar categoria", parameters,options).Result;
+
+        response = dialog.Data as HttpResponseMessage ?? null;
+
+        if (response != null) {
+           if(response.IsSuccessStatusCode) {
+                Snackbar.Add("Categoria adicionado com sucesso.", Severity.Success);
+            }
+            else {
+                Snackbar.Add("Erro ao alterar categoria", Severity.Error);
+            }
+
+           await OnInitializedAsync();
+        }
+   }
+    private async Task DeleteCategory(int id)
+    {
+        bool? result = await mbox.Show();
+
+        if(result.Value) {
+            using var response =  await Http.DeleteAsync($"https://financial-manager.azurewebsites.net/categorias/{id}");
+
+            if (response.IsSuccessStatusCode)
+                Snackbar.Add("Categoria excluída com sucesso.", Severity.Success);
+            else
+                Snackbar.Add("Erro ao alterado categoria", Severity.Error);
+        }
+
+        await OnInitializedAsync();
+   }
+    
 }
