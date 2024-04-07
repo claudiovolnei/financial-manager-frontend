@@ -4,7 +4,6 @@
 @using FinancialManager.Web.Components.Category.Formulario
 @using FinancialManager.Web.Components.Category.Model
 @inject ISnackbar Snackbar
-@inject NavigationManager _navigationManager
 
 <PageTitle>Categoria</PageTitle>
 
@@ -28,7 +27,7 @@ else
             <tr>
                 <th>Id</th>
                 <th>Nome</th>
-                <th>Categoria Id</th>                
+                <th>Categoria</th>                
                 <th></th>                
             </tr>
         </thead>
@@ -38,7 +37,7 @@ else
                 <tr>
                     <td>@category.Id</td>
                     <td>@category.Name</td>
-                    <td>@category.AccountTypeId</td> 
+                    <td>@category.AccountType.Name</td> 
                     <td>
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Primary" OnClick="(() => EditCategory(category))"></MudIconButton>
                         <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="(() => DeleteCategory(category.Id))"></MudIconButton>
@@ -92,7 +91,7 @@ else
     {
         var parameters = new DialogParameters();
         var options = new DialogOptions { CloseOnEscapeKey = true };
-        parameters.Add("modelParameter", new CategoryRequest { Name = categoryResponse.Name, AccountTypeId = categoryResponse.AccountTypeId, Id = categoryResponse.Id});
+        parameters.Add("modelParameter", new CategoryRequest { Name = categoryResponse.Name, AccountTypeId = categoryResponse.AccountType.Id, Id = categoryResponse.Id});
         var dialog = await DialogService.Show<CreateEditForm>("Alterar categoria", parameters,options).Result;
 
         response = dialog.Data as HttpResponseMessage ?? null;

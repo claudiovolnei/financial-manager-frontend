@@ -1,11 +1,20 @@
 ﻿@page "/subcategoria"
+@using FinancialManager.Web.Components.SubCategory.Formulario
+@using FinancialManager.Web.Components.SubCategory.Model
 @inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <PageTitle>Subcategoria</PageTitle>
 
 <h1>Subcategoria</h1>
 
-<p>Listagem de subcategorias</p>
+<MudIconButton Icon="@Icons.Material.Filled.Add" 
+            Color="Color.Primary" 
+            OnClick="CreateSubcategory"
+            Variant="Variant.Filled"
+            Size="Size.Large">
+</MudIconButton>
 
 @if (subcategories == null)
 {
@@ -18,7 +27,8 @@ else
             <tr>
                 <th>Id</th>
                 <th>Nome</th>
-                <th>Categoria Id</th>                
+                <th>Categoria</th>         
+                <th></th>       
             </tr>
         </thead>
         <tbody>
@@ -27,26 +37,90 @@ else
                 <tr>
                     <td>@subCategory.Id</td>
                     <td>@subCategory.Name</td>
-                    <td>@subCategory.CategoryId</td>                    
+                    <td>@subCategory.Category.Name</td>   
+                    <td>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Primary" OnClick="(() => EditSubcategory(subCategory))"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="(() => DeleteSubcategory(subCategory.Id))"></MudIconButton>
+                    </td>                   
                 </tr>
             }
         </tbody>
     </table>
 }
 
+<MudMessageBox @ref="mbox" Title="Excluir" CancelText="Cancel">
+    <MessageContent>
+        Deseja excluir a subcategoria?
+    </MessageContent>
+    <YesButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteForever">Delete!</MudButton>
+    </YesButton>
+</MudMessageBox>
+
+
 @code {
-    private SubCategoryResponse[]? subcategories;
+    MudMessageBox? mbox { get; set; }
+    HttpResponseMessage? response;
+    private SubcategoryResponse[]? subcategories;
 
     protected override async Task OnInitializedAsync()
     {
-        subcategories = await Http.GetFromJsonAsync<SubCategoryResponse[]>("https://financial-manager.azurewebsites.net/subcategorias");
+        subcategories = await Http.GetFromJsonAsync<SubcategoryResponse[]>("https://financial-manager.azurewebsites.net/subcategorias");
     }
 
-    public record struct SubCategoryResponse(
-    int Id,
-    string Name,
-    int CategoryId,
-    DateTime CreatedAt,
-    DateTime UpdatedAt
-);
+    private async Task CreateSubcategory()
+    {
+        var parameters = new DialogParameters();
+        parameters.Add("modelParameter", new SubcategoryRequest());
+        var dialog = await DialogService.Show<CreateEditForm>("Criar Subcategoria", parameters).Result;
+
+        response = dialog.Data as HttpResponseMessage ?? null;
+
+        if (response != null) {
+            if(response.IsSuccessStatusCode) {
+                Snackbar.Add("Subcategoria adicionado com sucesso.", Severity.Success);
+            }
+            else {
+                Snackbar.Add("Erro ao adicionar categoria", Severity.Error);
+            }
+
+            await OnInitializedAsync();
+        }            
+   }
+    private async Task EditSubcategory(SubcategoryResponse subcategoryResponse)
+    {
+        var parameters = new DialogParameters();
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        parameters.Add("modelParameter", new SubcategoryRequest { Name = subcategoryResponse.Name, CategoryId = subcategoryResponse.Category.Id, Id = subcategoryResponse.Id});
+        var dialog = await DialogService.Show<CreateEditForm>("Alterar Subcategoria", parameters,options).Result;
+
+        response = dialog.Data as HttpResponseMessage ?? null;
+
+        if (response != null) {
+           if(response.IsSuccessStatusCode) {
+                Snackbar.Add("Subcategoria adicionado com sucesso.", Severity.Success);
+            }
+            else {
+                Snackbar.Add("Erro ao alterar Subcategoria", Severity.Error);
+            }
+
+           await OnInitializedAsync();
+        }
+   }
+    private async Task DeleteSubcategory(int id)
+    {
+        bool? result = await mbox.Show();
+
+        if(result.Value) {
+            using var response =  await Http.DeleteAsync($"https://financial-manager.azurewebsites.net/subcategorias/{id}");
+
+            if (response.IsSuccessStatusCode)
+                Snackbar.Add("Categoria excluída com sucesso.", Severity.Success);
+            else
+                Snackbar.Add("Erro ao alterado categoria", Severity.Error);
+        }
+
+        await OnInitializedAsync();
+   }
+   
 }
