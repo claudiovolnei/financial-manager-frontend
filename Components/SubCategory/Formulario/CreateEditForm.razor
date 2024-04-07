@@ -1,0 +1,58 @@
+@using FinancialManager.Web.Components.Category.Model
+@using FinancialManager.Web.Components.SubCategory.Model
+@inject HttpClient Http
+@using System.Linq;
+
+<MudDialog>
+    <DialogContent>
+        <MudSelect T="CategoryResponse" @bind-Value="@categroySelect" ToStringFunc="@converter" Required="true" RequiredError="Categoria é obrigatório." Label="Selecione uma categoria" AnchorOrigin="Origin.BottomCenter" Variant="Variant.Outlined" Clearable>
+            @foreach (var category in Categories)
+            {
+                <MudSelectItem Value="@category">@category.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudItem>
+            <MudTextField Label="Nome"
+                @bind-Value="model.Name"/>
+        </MudItem>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Primary" Class="ml-auto">Salvar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code{
+    [Parameter]
+    public SubcategoryRequest modelParameter { get; set; }
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    CategoryResponse[]? Categories = [];
+    CategoryResponse categroySelect;
+    SubcategoryRequest model;
+    HttpResponseMessage? response;
+
+    Func<CategoryResponse,string> converter = p => p.Name;
+    protected override async Task OnInitializedAsync()
+    {
+        Categories = await Http.GetFromJsonAsync<CategoryResponse[]>("https://financial-manager.azurewebsites.net/categorias");
+
+        categroySelect = Categories.Where(x => x.Id == modelParameter.CategoryId).FirstOrDefault();
+        model = modelParameter;               
+    }
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    private async void Submit()
+    {
+        model.CategoryId = categroySelect.Id;
+        if(model == null || !model.Id.HasValue) 
+            response =  await Http.PostAsJsonAsync("https://financial-manager.azurewebsites.net/subcategorias", model);
+        else
+          response =  await Http.PutAsJsonAsync($"https://financial-manager.azurewebsites.net/subcategorias/{model.Id}", model);
+
+        MudDialog.Close(DialogResult.Ok<HttpResponseMessage>(response));
+
+    }
+    
+}

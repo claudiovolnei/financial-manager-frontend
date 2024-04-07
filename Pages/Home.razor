@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using FinancialManager.Web.Components.SubCategory.Model
 @inject HttpClient Http
 
 <PageTitle>Lançamentos</PageTitle>
@@ -30,8 +31,8 @@ else
                 <tr>
                     <td>@transacao.Id</td>
                     <td>@transacao.Title</td>
-                    <td>@transacao.Value</td>                    
-                    <td>@transacao.SubCategoryId</td>                    
+                    <td>R$@transacao.Value</td>                    
+                    <td>@transacao.Subcategory.Name</td>                    
                     <td>@transacao.DataOrder.ToShortDateString()</td>                    
                     <td>@transacao.DatePayment?.ToShortDateString()</td>                    
                 </tr>
@@ -52,7 +53,7 @@ else
         int Id,
         string Title,
         decimal Value,
-        int SubCategoryId,
+        SubcategoryResponse Subcategory,
         DateTime DataOrder,
         DateTime? DatePayment
     );
