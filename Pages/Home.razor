@@ -31,7 +31,7 @@ else
                 <tr>
                     <td>@transacao.Id</td>
                     <td>@transacao.Title</td>
-                    <td>R$@transacao.Value</td>                    
+                    <td><MudText>@($"R$ {@transacao.Value:#,##0.00}")</MudText></td>                    
                     <td>@transacao.Subcategory.Name</td>                    
                     <td>@transacao.DataOrder.ToShortDateString()</td>                    
                     <td>@transacao.DatePayment?.ToShortDateString()</td>                    
