@@ -1,0 +1,103 @@
+@using FinancialManager.Web.Components.Transaction.Model
+@using FinancialManager.Web.Components.SubCategory.Model
+@inject HttpClient Http
+@using System.Linq;
+@using System.Globalization
+@using FinancialManager.Web.util
+@using System.ComponentModel.DataAnnotations
+
+<MudDialog>
+    <DialogContent>
+        <MudItem>
+            <MudSelect T="SubcategoryResponse" @bind-Value="@SubcategroySelect" ToStringFunc="@converter" Required="true" RequiredError="Subcategoria é obrigatório." Label="Selecione uma subcategoria" AnchorOrigin="Origin.BottomCenter" Variant="Variant.Outlined" Clearable>
+                @foreach (var subcategory in Subcategories)
+                {
+                    <MudSelectItem Value="@subcategory">@subcategory.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem>
+            <MudSelect T="TypeCard" @bind-Value="@TypeCardSelect" ToStringFunc="@converterType"     Required="true" RequiredError="Cartão é obrigatório." Label="Selecione um tipo de cartão"   AnchorOrigin="Origin.BottomCenter" Variant="Variant.Outlined" Clearable>
+                @foreach (var type in ValuesTypeCard)
+                {
+                    <MudSelectItem Value="@type">@DisplayName(type)</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem>
+            <MudTextField Label="Descrição"
+                @bind-Value="model.Title"/>
+        </MudItem>
+        <MudItem>
+            <MudTextField Label="Valor" Format="N2"
+                      @bind-Value="model.ValuePayment"  Variant="@Variant.Text" Clearable />
+            @* Mask="@(new PatternMask("R$ 00000,00"))"  *@
+        </MudItem>
+        <MudItem>
+            <MudDatePicker Label="Data" @bind-Date="model.DateOrder" />
+        </MudItem>
+        <MudItem>
+            <MudDatePicker Label="Data pagamento" @bind-Date="model.DatePayment"/>
+        </MudItem>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Primary" Class="ml-auto">Salvar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code{
+    [Parameter]
+    public TransactionOrderRequest modelParameter { get; set; }
+    public CultureInfo pt = CultureInfo.GetCultureInfo("pt-BR");
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    SubcategoryResponse[]? Subcategories = [];
+    SubcategoryResponse SubcategroySelect;
+    public HashSet<TypeCard> ValuesTypeCard { get; set; } = Enum.GetValues<TypeCard>().ToHashSet();
+    TypeCard TypeCardSelect;
+    TransactionOrderRequest model;
+    HttpResponseMessage? response;
+    Func<SubcategoryResponse,string> converter = p => p.Name;
+    Func<TypeCard,string> converterType = p => DisplayName(p);
+
+    public static string DisplayName(TypeCard typeCard) => typeCard.GetAttribute<DisplayAttribute>()?.Name?? string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Subcategories = await Http.GetFromJsonAsync<SubcategoryResponse[]>("https://financial-manager.azurewebsites.net/subcategorias");
+
+        SubcategroySelect = Subcategories.Where(x => x.Id == modelParameter.SubcategoryId).FirstOrDefault();
+
+        TypeCardSelect = ValuesTypeCard.Where(x => x == modelParameter.TypeCard).FirstOrDefault();
+
+        model = modelParameter;               
+    }
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    private async void Submit()
+    {
+        ConfiugureModel();
+
+        if(model == null || !model.Id.HasValue) 
+            response =  await Http.PostAsJsonAsync("https://financial-manager.azurewebsites.net/transaction-order", model);
+        else
+          response =  await Http.PutAsJsonAsync($"https://financial-manager.azurewebsites.net/transaction-order/{model.Id}", model);
+
+        MudDialog.Close(DialogResult.Ok<HttpResponseMessage>(response));
+    }
+
+    private void ConfiugureModel() 
+    {
+        model.SubcategoryId = SubcategroySelect.Id;
+        model.TypeCard = TypeCardSelect;
+
+        if(model.DateOrder.HasValue)
+            model.DateOrder = DateTime.SpecifyKind(model.DateOrder.Value, DateTimeKind.Utc);
+
+        if(model.DatePayment.HasValue)
+            model.DatePayment = DateTime.SpecifyKind(model.DatePayment.Value, DateTimeKind.Utc);
+    }
+    
+}

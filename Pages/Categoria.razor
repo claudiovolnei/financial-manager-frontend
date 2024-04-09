@@ -1,7 +1,7 @@
 ﻿@page "/categoria"
 @inject HttpClient Http
 @inject IDialogService DialogService
-@using FinancialManager.Web.Components.Category.Formulario
+@using FinancialManager.Web.Components.Category.Form
 @using FinancialManager.Web.Components.Category.Model
 @inject ISnackbar Snackbar
 
@@ -27,7 +27,7 @@ else
             <tr>
                 <th>Id</th>
                 <th>Nome</th>
-                <th>Categoria</th>                
+                <th>Conta</th>                
                 <th></th>                
             </tr>
         </thead>
@@ -39,8 +39,8 @@ else
                     <td>@category.Name</td>
                     <td>@category.AccountType.Name</td> 
                     <td>
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Primary" OnClick="(() => EditCategory(category))"></MudIconButton>
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="(() => DeleteCategory(category.Id))"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="(() => EditCategory(category))"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="(() => DeleteCategory(category.Id))"></MudIconButton>
                     </td>                   
                 </tr>
             }

@@ -1,5 +1,5 @@
 ﻿@page "/subcategoria"
-@using FinancialManager.Web.Components.SubCategory.Formulario
+@using FinancialManager.Web.Components.SubCategory.Form
 @using FinancialManager.Web.Components.SubCategory.Model
 @inject HttpClient Http
 @inject ISnackbar Snackbar
@@ -39,8 +39,8 @@ else
                     <td>@subCategory.Name</td>
                     <td>@subCategory.Category.Name</td>   
                     <td>
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Primary" OnClick="(() => EditSubcategory(subCategory))"></MudIconButton>
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="(() => DeleteSubcategory(subCategory.Id))"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="(() => EditSubcategory(subCategory))"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"OnClick="(() => DeleteSubcategory(subCategory.Id))"></MudIconButton>
                     </td>                   
                 </tr>
             }

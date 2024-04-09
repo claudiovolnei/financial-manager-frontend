@@ -1,60 +1,165 @@
 ﻿@page "/"
 @using FinancialManager.Web.Components.SubCategory.Model
+@using FinancialManager.Web.Components.Transaction.Model
 @inject HttpClient Http
+@using FinancialManager.Web.Components.Transaction.Form
+@using FinancialManager.Web.util
+@using System.ComponentModel.DataAnnotations
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <PageTitle>Lançamentos</PageTitle>
 
 <h1>Lançamentos</h1>
 
-<p>Lançamentos</p>
-
-@if (transacoes == null)
+@if (Transactions == null)
 {
     <p><em>Loading...</em></p>
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Descrição</th>
-                <th>Valor</th>                
-                <th>Subcategoria</th>                
-                <th>Data Lançamento</th>                
-                <th>Data Pagamento</th>                
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var transacao in transacoes)
-            {
-                <tr>
-                    <td>@transacao.Id</td>
-                    <td>@transacao.Title</td>
-                    <td><MudText>@($"R$ {@transacao.Value:#,##0.00}")</MudText></td>                    
-                    <td>@transacao.Subcategory.Name</td>                    
-                    <td>@transacao.DataOrder.ToShortDateString()</td>                    
-                    <td>@transacao.DatePayment?.ToShortDateString()</td>                    
-                </tr>
-            }
-        </tbody>
-    </table>
+    <MudTable Hover="true" Breakpoint="Breakpoint.Sm" Height="500px" FixedHeader="true"
+              Items="@Transactions"
+              GroupBy="@_groupDefinition"
+              RowClass="cursor-pointer"
+              GroupHeaderStyle="background-color:var(--mud-palette-background-grey)"
+              GroupFooterClass="mb-4"
+              Dense="true"              
+              @ref="_tableRef">
+        <ColGroup>
+            <col style="width: 60px;" />
+            <col />
+            <col />
+            <col />
+        </ColGroup>
+        <HeaderContent>
+            <MudTh></MudTh>
+            <MudTh>Descrição</MudTh>
+            <MudTh>Subcategoria</MudTh>
+            <MudTh Style="text-align: right">Valor</MudTh>
+        </HeaderContent>
+        <GroupHeaderTemplate>
+            <MudTh Class="mud-table-cell-custom-group" colspan="5">@($"{context.GroupName}{context.Key.ToString()}") </MudTh>
+        </GroupHeaderTemplate>
+        <RowTemplate>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" OnClick="(() => EditTransaction(context))"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="(() => DeleteTransaction(context.Id))"></MudIconButton>
+            </MudTd>
+            <MudTd DataLabel="Descrição">@context.Title</MudTd>
+            <MudTd DataLabel="Subcategoria">@context.Subcategory.Name</MudTd>
+            <MudTd Style="text-align: right" DataLabel="Valor">
+                <MudText>@($"R$ {@context.ValuePayment:#,##0.00}")</MudText>
+            </MudTd>
+        </RowTemplate>
+        <GroupFooterTemplate>
+            <MudTh Style="text-align: right" Class="mud-table-cell-custom-group mud-table-cell-custom-group-footer" colspan="5">
+                <MudText>Total : @($"R$ {@context.Items.Sum((e) => e.ValuePayment):#,##0.00}")</MudText>
+            </MudTh>
+        </GroupFooterTemplate>
+    </MudTable>
+    <br>
+    <div style="text-align: center">
+        <MudIconButton Icon="@Icons.Material.Filled.Add" 
+                Color="Color.Primary" 
+                OnClick="CreateTransaction"
+                Variant="Variant.Filled"
+                Size="Size.Large"
+                >
+        </MudIconButton>
+    </div>
+
 }
 
-@code {
-    private TransactionOrderReponse[]? transacoes;
+<MudMessageBox @ref="mbox" Title="Excluir" CancelText="Cancel">
+    <MessageContent>
+        Deseja excluir a categoria?
+    </MessageContent>
+    <YesButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteForever">Delete!</MudButton>
+    </YesButton>
+</MudMessageBox>
 
-    protected override async Task OnInitializedAsync()
+@code {
+    private TransactionOrderReponse[]? Transactions;
+    private MudTable<TransactionOrderReponse> _tableRef;
+    MudMessageBox? mbox { get; set; }
+    HttpResponseMessage? response;
+    private TableGroupDefinition<TransactionOrderReponse> _groupDefinition = new()
+        {
+            @* GroupName = "Cartão", *@
+            Indentation = true,
+            Expandable = true,
+            IsInitiallyExpanded = false,
+            Selector = (e) => e.TypeCard.GetAttribute<DisplayAttribute>().Name
+        };
+
+    protected override async Task OnInitializedAsync()    
     {
-        transacoes = await Http.GetFromJsonAsync<TransactionOrderReponse[]>("https://financial-manager.azurewebsites.net/transaction-order");
+        Transactions = await Http.GetFromJsonAsync<TransactionOrderReponse[]>("https://financial-manager.azurewebsites.net/transaction-order");
     }
 
-    public record struct TransactionOrderReponse(
-        int Id,
-        string Title,
-        decimal Value,
-        SubcategoryResponse Subcategory,
-        DateTime DataOrder,
-        DateTime? DatePayment
-    );
+    private async Task CreateTransaction()
+    {
+        var parameters = new DialogParameters();
+        parameters.Add("modelParameter", new TransactionOrderRequest());
+        var dialog = await DialogService.Show<CreateEditForm>("Transação", parameters).Result;
+
+        response = dialog.Data as HttpResponseMessage ?? null;
+
+        if (response != null) {
+            if(response.IsSuccessStatusCode) {
+                Snackbar.Add("Transação adicionado com sucesso.", Severity.Success);
+            }
+            else {
+                Snackbar.Add("Erro ao adicionar transação", Severity.Error);
+            }
+
+            await OnInitializedAsync();
+        }            
+   }
+    private async Task EditTransaction(TransactionOrderReponse transactionOrderReponse)
+    {
+        var parameters = new DialogParameters();
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        parameters.Add(
+            "modelParameter", new TransactionOrderRequest { 
+                Id = transactionOrderReponse.Id,
+                Title = transactionOrderReponse.Title, 
+                SubcategoryId = transactionOrderReponse.Subcategory.Id, 
+                ValuePayment = transactionOrderReponse.ValuePayment,
+                TypeCard = transactionOrderReponse.TypeCard,
+                DateOrder = transactionOrderReponse.DateOrder,
+                DatePayment = transactionOrderReponse.DatePayment
+            });
+        var dialog = await DialogService.Show<CreateEditForm>("Alterar transação", parameters,options).Result;
+
+        response = dialog.Data as HttpResponseMessage ?? null;
+
+        if (response != null) {
+           if(response.IsSuccessStatusCode) {
+                Snackbar.Add("Transação alterado com sucesso.", Severity.Success);
+            }
+            else {
+                Snackbar.Add("Erro ao alterar transação", Severity.Error);
+            }
+
+           await OnInitializedAsync();
+        }
+}
+    private async Task DeleteTransaction(int id)
+    {
+        bool? result = await mbox.Show();
+
+        if(result.Value) {
+            using var response =  await Http.DeleteAsync($"https://financial-manager.azurewebsites.net/transaction-order/{id}");
+
+            if (response.IsSuccessStatusCode)
+                Snackbar.Add("Transação excluída com sucesso.", Severity.Success);
+            else
+                Snackbar.Add("Erro ao alterado transação", Severity.Error);
+        }
+
+        await OnInitializedAsync();
+   }
 }
