@@ -1,25 +1,41 @@
 ﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
 
-    <main>
-        <MudThemeProvider/>
-        <MudDialogProvider
-            FullWidth="true"
-            MaxWidth="MaxWidth.ExtraSmall"
-            CloseButton="true"
-            DisableBackdropClick="true"
-            Position="DialogPosition.Center"
-            CloseOnEscapeKey="true"/>
-        <MudSnackbarProvider/>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
+<MudLayout>
+    <MudThemeProvider/>
+    <MudDialogProvider
+        FullWidth="true"
+        MaxWidth="MaxWidth.ExtraSmall"
+        CloseButton="true"
+        DisableBackdropClick="true"
+        Position="DialogPosition.Center"
+        CloseOnEscapeKey="true"/>
+    <MudSnackbarProvider/>
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
+        <MudSpacer />
+        
+    </MudAppBar>
+    <MudDrawer @bind-Open="@open" Elevation="1">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">Gestão Financeira</MudText>
+        </MudDrawerHeader>
+        <MudNavMenu>
+    <MudNavLink Href="/historico" Match="NavLinkMatch.All">Historico</MudNavLink>
+    <MudNavLink Href="/categoria" Match="NavLinkMatch.All">Categoria</MudNavLink>
+    <MudNavLink Href="/subcategoria" Match="NavLinkMatch.All">Subcategoria</MudNavLink>
+</MudNavMenu>
+    </MudDrawer>
+    <MudMainContent>
+        <MudContainer>
             @Body
-        </article>
-    </main>
-</div>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+@code{
+    bool open = false;
+
+    void ToggleDrawer()
+    {
+        open = !open;
+    }
+}

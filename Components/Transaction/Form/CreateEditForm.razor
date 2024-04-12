@@ -25,6 +25,14 @@
             </MudSelect>
         </MudItem>
         <MudItem>
+            <MudSelect T="TypeTransaction" @bind-Value="@TypeTransactionSelect" ToStringFunc="@converterTypeTransaction" Required="true" RequiredError="Tipo de lançamento é obrigatório." Label="Selecione um tipo de lançamento"   AnchorOrigin="Origin.BottomCenter" Variant="Variant.Outlined" Clearable>
+                @foreach (var type in ValuesTypeTransaction)
+                {
+                    <MudSelectItem Value="@type">@DisplayName(type)</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem>
             <MudTextField Label="Descrição"
                 @bind-Value="model.Title"/>
         </MudItem>
@@ -54,13 +62,17 @@
     SubcategoryResponse[]? Subcategories = [];
     SubcategoryResponse SubcategroySelect;
     public HashSet<TypeCard> ValuesTypeCard { get; set; } = Enum.GetValues<TypeCard>().ToHashSet();
+    public HashSet<TypeTransaction> ValuesTypeTransaction { get; set; } = Enum.GetValues<TypeTransaction>().ToHashSet();
     TypeCard TypeCardSelect;
     TransactionOrderRequest model;
     HttpResponseMessage? response;
     Func<SubcategoryResponse,string> converter = p => p.Name;
     Func<TypeCard,string> converterType = p => DisplayName(p);
+    Func<TypeTransaction,string> converterTypeTransaction = p => DisplayName(p);
+    TypeTransaction TypeTransactionSelect;
 
     public static string DisplayName(TypeCard typeCard) => typeCard.GetAttribute<DisplayAttribute>()?.Name?? string.Empty;
+    public static string DisplayName(TypeTransaction typeTransaction) => typeTransaction.GetAttribute<DisplayAttribute>()?.Name?? string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,6 +81,7 @@
         SubcategroySelect = Subcategories.Where(x => x.Id == modelParameter.SubcategoryId).FirstOrDefault();
 
         TypeCardSelect = ValuesTypeCard.Where(x => x == modelParameter.TypeCard).FirstOrDefault();
+        TypeTransactionSelect = model.ValuePayment > 0 ? TypeTransaction.Credit : TypeTransaction.Debit;
 
         model = modelParameter;               
     }
@@ -92,6 +105,7 @@
     {
         model.SubcategoryId = SubcategroySelect.Id;
         model.TypeCard = TypeCardSelect;
+        model.ValuePayment = TypeTransactionSelect == TypeTransaction.Debit ? -(model.ValuePayment) : model.ValuePayment;
 
         if(model.DateOrder.HasValue)
             model.DateOrder = DateTime.SpecifyKind(model.DateOrder.Value, DateTimeKind.Utc);

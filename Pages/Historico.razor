@@ -1,0 +1,225 @@
+﻿@page "/historico"
+@using FinancialManager.Web.Components.SubCategory.Model
+@using FinancialManager.Web.Components.Transaction.Model
+@inject HttpClient Http
+@using FinancialManager.Web.Components.Transaction.Form
+@using FinancialManager.Web.util
+@using System.ComponentModel.DataAnnotations
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Historico</PageTitle>
+<br>
+<MudGrid>
+    <MudItem xs="5" sm="4" Style="text-align: right;">
+        <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="(()=>BackMonth())"Size="Size.Small" />
+    </MudItem>             
+    <MudItem xs="2" sm="3">
+        <MudText Typo="Typo.h5" Align="Align.Center">@MonthValue/@YearValue</MudText>
+    </MudItem>
+    <MudItem xs="5" sm="5">
+        <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowRight" OnClick="(()=>NextMonth())"Size="Size.Small" />
+    </MudItem>
+    <MudItem sm="6" style="text-align: right;">
+        <MudIconButton Icon="@Icons.Material.Filled.Add" 
+            Color="Color.Primary" 
+            OnClick="CreateTransaction"
+            Variant="Variant.Filled"
+            Size="Size.Large"
+            >
+    </MudIconButton>
+    </MudItem>
+</MudGrid>
+<br>
+
+<MudExpansionPanels MultiExpansion="true">
+    @foreach(var typecard in ValuesTypeCard)
+    {
+        if(typecard.Equals(TypeCard.Vazio))
+            continue;
+
+        <MudExpansionPanel Text="@DisplayName(typecard)">
+            @if(Transactions == null)
+            {
+                <p><em>Loading...</em></p>
+            }
+            else
+            {
+                <h4 style="text-align: right;">Saldo: @($"R$ {@SumTotal(Transactions, typecard):#,##0.00}") </h4>            
+                <MudGrid>
+                    @foreach(var transaction in Transactions)
+                    {
+                        @if(transaction.TypeCard == typecard)
+                        {  
+                             <!-- Primeira coluna com ícone grande -->
+                             <MudItem sm="1" xs="1">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" OnClick="(() => EditTransaction(transaction))"></MudIconButton>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="(() => DeleteTransaction(transaction.Id))"></MudIconButton>
+                             </MudItem>
+                             <MudItem xs="2" sm="1">
+                                 <MudIcon Icon="@Icons.Material.Filled.Payment"Style="font-size: 3rem" />
+                             </MudItem>
+                             <!-- Segunda coluna com duas linhas alinhadas com o ícone -->
+                             <MudItem xs="5" sm="6" >
+                                 <MudText Typo="Typo.subtitle1">@transaction.Title</MudText>
+                                 <MudText Typo="Typo.body2">@transaction.Subcategory.Name</MudText>
+                             </MudItem>
+                             <!-- Terceira coluna com texto -->
+                             <MudItem xs="4" sm="4"  style="text-align: right;">
+                                 <MudText Typo="Typo.body1" Style="@($"color:{colorValue(transaction.ValuePayment)};")">@($"R$ {@transaction.ValuePayment:###0.00}")</MudText>
+                             </MudItem>                         
+                        }
+                    }                    
+                </MudGrid>
+            }
+        </MudExpansionPanel>
+    }        
+</MudExpansionPanels>
+
+<MudMessageBox @ref="mbox" Title="Excluir" CancelText="Cancel">
+    <MessageContent>
+        Deseja excluir a categoria?
+    </MessageContent>
+    <YesButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteForever">Delete!</MudButton>
+    </YesButton>
+</MudMessageBox>
+
+@code {
+    private MudTheme Theme = new MudTheme();
+    private TransactionOrderReponse[]? Transactions;
+    MudMessageBox? mbox { get; set; }
+    HttpResponseMessage? response;
+    private double Total;
+    public HashSet<TypeCard> ValuesTypeCard { get; set; } = Enum.GetValues<TypeCard>().ToHashSet();
+    public static string DisplayName(TypeCard typeCard) => typeCard.GetAttribute<DisplayAttribute>()?.Name?? string.Empty;
+    public string? MonthValue;
+    public int YearValue;
+    MudBlazor.Utilities.MudColor colorValue(double valuePayment) => valuePayment > 0 ? Theme.Palette.Success : Theme.Palette.Error;
+    public void NextMonth()
+    {
+        if(MonthValue.Equals("Dezembro"))
+        {
+            this.MonthValue = TypesMonth.Where(x => x.Item1 == 1).FirstOrDefault().Item2;
+            this.YearValue = YearValue + 1;
+        }
+        else
+        {
+            this.MonthValue = TypesMonth
+                    .Where(x => x.Item1 == TypesMonth.Where(x => x.Item2 == this.MonthValue).FirstOrDefault().Item1 + 1)
+                    .FirstOrDefault().Item2;
+        }
+    }
+    public void BackMonth()
+    {
+        if(MonthValue.Equals("Janeiro"))
+        {
+            this.MonthValue = TypesMonth.Where(x => x.Item1 == 12).FirstOrDefault().Item2;
+            this.YearValue = YearValue -1;
+        }
+        else
+        {
+            this.MonthValue = TypesMonth
+                    .Where(x => x.Item1 == TypesMonth.Where(x => x.Item2 == this.MonthValue).FirstOrDefault().Item1 -1)
+                    .FirstOrDefault().Item2;
+        }
+    }
+
+    public void GetMonthAndYear()
+    {
+
+    }
+    static List<(int, string)> TypesMonth = new List<(int, string)>
+    {
+        (1, "Janeiro"),
+        (2, "Fevereiro"),
+        (3, "Março"),
+        (4, "Abril"),
+        (5, "Maio"),
+        (6, "Junho"),
+        (7, "Julho"),
+        (8, "Agosto"),
+        (9, "Setembro"),
+        (10, "Outubro"),
+        (11, "Novembro"),
+        (12, "Dezembro"),
+    };
+
+    protected override async Task OnInitializedAsync()    
+    {
+        Transactions = await Http.GetFromJsonAsync<TransactionOrderReponse[]>("https://financial-manager.azurewebsites.net/transaction-order");
+
+        this.MonthValue = TypesMonth.Where(x => x.Item1 == DateTime.Now.Month).FirstOrDefault().Item2;
+        this.YearValue = DateTime.Now.Year;
+    }
+
+    private double SumTotal(TransactionOrderReponse[] transactionsOrderReponse, TypeCard typeCard)
+    {
+        return transactionsOrderReponse
+            .Where(x => x.TypeCard == typeCard)
+            .Sum(s => s.ValuePayment);                   
+    }
+    private async Task CreateTransaction()
+    {
+        var parameters = new DialogParameters();
+        parameters.Add("modelParameter", new TransactionOrderRequest());
+        var dialog = await DialogService.Show<CreateEditForm>("Transação", parameters).Result;
+
+        response = dialog.Data as HttpResponseMessage ?? null;
+
+        if (response != null) {
+            if(response.IsSuccessStatusCode) {
+                Snackbar.Add("Transação adicionado com sucesso.", Severity.Success);
+            }
+            else {
+                Snackbar.Add("Erro ao adicionar transação", Severity.Error);
+            }
+
+            await OnInitializedAsync();
+        }            
+   }
+    private async Task EditTransaction(TransactionOrderReponse transactionOrderReponse)
+    {
+        var parameters = new DialogParameters();
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        parameters.Add(
+            "modelParameter", new TransactionOrderRequest { 
+                Id = transactionOrderReponse.Id,
+                Title = transactionOrderReponse.Title, 
+                SubcategoryId = transactionOrderReponse.Subcategory.Id, 
+                ValuePayment = transactionOrderReponse.ValuePayment,
+                TypeCard = transactionOrderReponse.TypeCard,
+                DateOrder = transactionOrderReponse.DateOrder,
+                DatePayment = transactionOrderReponse.DatePayment
+            });
+        var dialog = await DialogService.Show<CreateEditForm>("Alterar transação", parameters,options).Result;
+
+        response = dialog.Data as HttpResponseMessage ?? null;
+
+        if (response != null) {
+           if(response.IsSuccessStatusCode) {
+                Snackbar.Add("Transação alterado com sucesso.", Severity.Success);
+            }
+            else {
+                Snackbar.Add("Erro ao alterar transação", Severity.Error);
+            }
+
+           await OnInitializedAsync();
+        }
+}
+    private async Task DeleteTransaction(int id)
+    {
+        bool? result = await mbox.Show();
+
+        if(result.Value) {
+            using var response =  await Http.DeleteAsync($"https://financial-manager.azurewebsites.net/transaction-order/{id}");
+
+            if (response.IsSuccessStatusCode)
+                Snackbar.Add("Transação excluída com sucesso.", Severity.Success);
+            else
+                Snackbar.Add("Erro ao alterado transação", Severity.Error);
+        }
+
+        await OnInitializedAsync();
+   }
+}

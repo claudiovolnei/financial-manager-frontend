@@ -16,8 +16,15 @@ public record struct TransactionOrderReponse(
 public enum TypeCard {
     [Display (Name = "")]
     Vazio = 0,
-    [Display(Name = "Cartão de Debito")]
+    [Display(Name = "Conta Corrente")]
     DebitCard = 1,
     [Display(Name = "Cartão de Crédito")]
     CreditCard = 2
+}
+
+public enum TypeTransaction {
+    [Display (Name = "Debito")]
+    Debit = 1,
+    [Display (Name = "Crédito")]
+    Credit = 2
 }
