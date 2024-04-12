@@ -10,24 +10,25 @@
 
 <PageTitle>Historico</PageTitle>
 <br>
-<MudGrid>
-    <MudItem xs="5" sm="4" Style="text-align: right;">
+<MudGrid Spacing="2" Justify="Justify.Center">
+    <MudItem>
         <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="(()=>BackMonth())"Size="Size.Small" />
     </MudItem>             
-    <MudItem xs="2" sm="3">
+    <MudItem>
         <MudText Typo="Typo.h5" Align="Align.Center">@MonthValue/@YearValue</MudText>
     </MudItem>
-    <MudItem xs="5" sm="5">
+    <MudItem>
         <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowRight" OnClick="(()=>NextMonth())"Size="Size.Small" />
     </MudItem>
-    <MudItem sm="6" style="text-align: right;">
-        <MudIconButton Icon="@Icons.Material.Filled.Add" 
-            Color="Color.Primary" 
-            OnClick="CreateTransaction"
-            Variant="Variant.Filled"
-            Size="Size.Large"
-            >
-    </MudIconButton>
+</MudGrid>
+<MudGrid Spacing="2" Justify="Justify.Center">
+    <MudItem>
+        <MudFab Color="Color.Primary" 
+                StartIcon="@Icons.Material.Filled.Add"
+                OnClick="CreateTransaction"
+                Variant="Variant.Filled"
+                Size="Size.Large"
+         />
     </MudItem>
 </MudGrid>
 <br>
@@ -96,7 +97,23 @@
     public string? MonthValue;
     public int YearValue;
     MudBlazor.Utilities.MudColor colorValue(double valuePayment) => valuePayment > 0 ? Theme.Palette.Success : Theme.Palette.Error;
-    public void NextMonth()
+    protected override async Task OnInitializedAsync()    
+    {
+        if(string.IsNullOrEmpty(this.MonthValue))
+            this.MonthValue = TypesMonth.Where(x => x.Item1 == DateTime.Now.Month).FirstOrDefault().Item2;
+
+        if(YearValue == 0)
+            this.YearValue = DateTime.Now.Year;
+
+        var transactions = await Http.GetFromJsonAsync<TransactionOrderReponse[]?>($"https://financial-manager.azurewebsites.net/transaction-order?Year={this.YearValue}&Month={ TypesMonth.Where(x => x.Item2 == this.MonthValue).FirstOrDefault().Item1}");
+
+        if(transactions is not null && transactions.Any())
+            Transactions = transactions;
+        else
+            Transactions = new TransactionOrderReponse[] {};
+
+    }
+    public async Task NextMonth()
     {
         if(MonthValue.Equals("Dezembro"))
         {
@@ -109,8 +126,11 @@
                     .Where(x => x.Item1 == TypesMonth.Where(x => x.Item2 == this.MonthValue).FirstOrDefault().Item1 + 1)
                     .FirstOrDefault().Item2;
         }
+
+        await OnInitializedAsync();
+        
     }
-    public void BackMonth()
+    public async Task BackMonth()
     {
         if(MonthValue.Equals("Janeiro"))
         {
@@ -123,12 +143,10 @@
                     .Where(x => x.Item1 == TypesMonth.Where(x => x.Item2 == this.MonthValue).FirstOrDefault().Item1 -1)
                     .FirstOrDefault().Item2;
         }
+
+        await OnInitializedAsync();
     }
 
-    public void GetMonthAndYear()
-    {
-
-    }
     static List<(int, string)> TypesMonth = new List<(int, string)>
     {
         (1, "Janeiro"),
@@ -145,20 +163,13 @@
         (12, "Dezembro"),
     };
 
-    protected override async Task OnInitializedAsync()    
-    {
-        Transactions = await Http.GetFromJsonAsync<TransactionOrderReponse[]>("https://financial-manager.azurewebsites.net/transaction-order");
-
-        this.MonthValue = TypesMonth.Where(x => x.Item1 == DateTime.Now.Month).FirstOrDefault().Item2;
-        this.YearValue = DateTime.Now.Year;
-    }
-
     private double SumTotal(TransactionOrderReponse[] transactionsOrderReponse, TypeCard typeCard)
     {
         return transactionsOrderReponse
             .Where(x => x.TypeCard == typeCard)
             .Sum(s => s.ValuePayment);                   
     }
+
     private async Task CreateTransaction()
     {
         var parameters = new DialogParameters();

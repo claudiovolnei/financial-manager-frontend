@@ -25,7 +25,6 @@ else
     <table class="table">
         <thead>
             <tr>
-                <th>Id</th>
                 <th>Nome</th>
                 <th>Conta</th>                
                 <th></th>                
@@ -35,7 +34,6 @@ else
             @foreach (var category in categories)
             {
                 <tr>
-                    <td>@category.Id</td>
                     <td>@category.Name</td>
                     <td>@category.AccountType.Name</td> 
                     <td>
