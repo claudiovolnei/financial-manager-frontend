@@ -4,6 +4,7 @@
 @using FinancialManager.Web.Components.Category.Form
 @using FinancialManager.Web.Components.Category.Model
 @inject ISnackbar Snackbar
+@implements IDisposable
 
 <PageTitle>Categoria</PageTitle>
 
@@ -16,34 +17,34 @@
             Size="Size.Large">
 </MudIconButton>
 
-@if (categories == null)
+@if (Categories == null)
 {
     <p><em>Loading...</em></p>
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>Conta</th>                
-                <th></th>                
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var category in categories)
-            {
+        <table class="table">
+            <thead>
                 <tr>
-                    <td>@category.Name</td>
-                    <td>@category.AccountType.Name</td> 
-                    <td>
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="(() => EditCategory(category))"></MudIconButton>
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="(() => DeleteCategory(category.Id))"></MudIconButton>
-                    </td>                   
+                    <th>Nome</th>
+                    <th>Conta</th>                
+                    <th></th>                
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var category in Categories)
+                {
+                    <tr>
+                        <td>@category.Name</td>
+                        <td>@category.AccountType.Name</td> 
+                        <td>
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="(() => EditCategory(category))"></MudIconButton>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="(() => DeleteCategory(category.Id))"></MudIconButton>
+                        </td>                   
+                    </tr>
+                }
+            </tbody>
+        </table>
 }
 
 <MudMessageBox @ref="mbox" Title="Excluir" CancelText="Cancel">
@@ -55,21 +56,39 @@ else
     </YesButton>
 </MudMessageBox>
 
-
 @code {
-    private CategoryResponse[]? categories;
+    [CascadingParameter]
+    public MainLayout Layout { get; set; }
+    [Inject] private ServiceStateCategory? service { get; set; }
+    private ServiceStateCategory Service => service;
+    private CategoryResponse[]? Categories = [];
     MudMessageBox? mbox { get; set; }
     HttpResponseMessage? response;
 
     protected override async Task OnInitializedAsync()
     {
-        categories = await Http.GetFromJsonAsync<CategoryResponse[]>("https://financial-manager.azurewebsites.net/categorias");
+        this.Service.EventClick += this.SelectAccount;
+        await GetCategories(Layout.AccountTypeIdSelect);
+    }
+
+    private void SelectAccount(object sender, EventArgs e)
+    {      
+        Task.Run(async () => await GetCategories(Layout.AccountTypeIdSelect));   
+
+        this.InvokeAsync(StateHasChanged);
+    }
+    public void Dispose()
+        => this.Service.EventClick -= this.SelectAccount;
+
+    protected async Task GetCategories(int accountId)
+    {
+        Categories = await Http.GetFromJsonAsync<CategoryResponse[]>($"https://financial-manager.azurewebsites.net/categorias/tipos-conta/{accountId}");         
     }
 
     private async Task CreateCategory()
     {
         var parameters = new DialogParameters();
-        parameters.Add("modelParameter", new CategoryRequest());
+        parameters.Add("modelParameter", new CategoryRequest() { AccountTypeId = Layout.AccountTypeIdSelect});
         var dialog = await DialogService.Show<CreateEditForm>("Criar categoria", parameters).Result;
 
         response = dialog.Data as HttpResponseMessage ?? null;
@@ -89,7 +108,11 @@ else
     {
         var parameters = new DialogParameters();
         var options = new DialogOptions { CloseOnEscapeKey = true };
-        parameters.Add("modelParameter", new CategoryRequest { Name = categoryResponse.Name, AccountTypeId = categoryResponse.AccountType.Id, Id = categoryResponse.Id});
+        parameters.Add("modelParameter", new CategoryRequest { 
+            Name = categoryResponse.Name, 
+            AccountTypeId = categoryResponse.AccountType.Id, 
+            Id = categoryResponse.Id
+        });
         var dialog = await DialogService.Show<CreateEditForm>("Alterar categoria", parameters,options).Result;
 
         response = dialog.Data as HttpResponseMessage ?? null;

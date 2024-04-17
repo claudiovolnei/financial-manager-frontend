@@ -1,5 +1,7 @@
 ﻿@inherits LayoutComponentBase
+@inject HttpClient Http
 
+<CascadingValue Value="this">
 <MudLayout>
     <MudThemeProvider/>
     <MudDialogProvider
@@ -13,26 +15,60 @@
     <MudAppBar Elevation="1">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
         <MudSpacer />
-        
+    <MudMenu StartIcon="@Icons.Material.Outlined.PeopleAlt" Label="@AccountTypeSelect" Color="Color.Success" Variant="Variant.Filled">
+        @foreach(var accountType in AccountTypes) 
+        {
+            <MudMenuItem OnClick="() => SelectAccount(accountType)" Value="@accountType.Id">@accountType.Name</MudMenuItem>
+        }
+    </MudMenu>
     </MudAppBar>
     <MudDrawer @bind-Open="@open" Elevation="1">
         <MudDrawerHeader>
             <MudText Typo="Typo.h6">Gestão Financeira</MudText>
         </MudDrawerHeader>
         <MudNavMenu>
-    <MudNavLink Href="/gestao-financeira/historico" Match="NavLinkMatch.All">Historico</MudNavLink>
-    <MudNavLink Href="/gestao-financeira/categoria" Match="NavLinkMatch.All">Categoria</MudNavLink>
-    <MudNavLink Href="/gestao-financeira/subcategoria" Match="NavLinkMatch.All">Subcategoria</MudNavLink>
+    <MudNavLink Href="/historico" Match="NavLinkMatch.All">Historico</MudNavLink>
+    <MudNavLink Href="/categoria" Match="NavLinkMatch.All">Categoria</MudNavLink>
+    <MudNavLink Href="/subcategoria" Match="NavLinkMatch.All">Subcategoria</MudNavLink>
 </MudNavMenu>
     </MudDrawer>
     <MudMainContent>
         <MudContainer>
-            @Body
+            @if(_isInitComplete)
+            {
+                @Body
+            }
         </MudContainer>
     </MudMainContent>
 </MudLayout>
+</CascadingValue>
+
 @code{
+    [Inject] private ServiceStateCategory? service {get; set;}
+    private ServiceStateCategory Service => service;
     bool open = false;
+    AccountTypeResponse[]? AccountTypes;
+    string? AccountTypeSelect;
+    public int AccountTypeIdSelect;
+    private bool _isInitComplete = false;
+    protected override async Task OnInitializedAsync()
+    {
+        AccountTypes = await Http.GetFromJsonAsync<AccountTypeResponse[]>("https://financial-manager.azurewebsites.net/tipos-conta");
+
+        AccountTypeSelect = AccountTypes?[0].Name;
+        AccountTypeIdSelect = AccountTypes[0].Id;
+
+        _isInitComplete = true;
+    }
+
+    public void SelectAccount(AccountTypeResponse accountTypeResponse) 
+    {
+        AccountTypeSelect = accountTypeResponse.Name;
+        AccountTypeIdSelect = accountTypeResponse.Id; 
+        this.Service.GetCategoriesService(this);
+    }
+
+    public record struct AccountTypeResponse(int Id, string Name);
 
     void ToggleDrawer()
     {

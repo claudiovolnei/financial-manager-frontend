@@ -9,5 +9,6 @@ public record struct TransactionOrderRequest(
         int SubcategoryId,
         TypeCard TypeCard,
         DateTime? DateOrder,
-        DateTime? DatePayment
+        DateTime? DatePayment,
+        int AccountTypeId
 );

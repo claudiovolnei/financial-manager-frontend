@@ -9,4 +9,5 @@ public record struct SubcategoryRequest()
         public string Name { get; set; }
         [Required (ErrorMessage = "Categoria é obrigatória.")]
         public int CategoryId { get; set; }
+        public int AccountTypeId { get; set; }
 }

@@ -34,7 +34,7 @@
     Func<CategoryResponse,string> converter = p => p.Name;
     protected override async Task OnInitializedAsync()
     {
-        Categories = await Http.GetFromJsonAsync<CategoryResponse[]>("https://financial-manager.azurewebsites.net/categorias");
+        Categories = await Http.GetFromJsonAsync<CategoryResponse[]>($"https://financial-manager.azurewebsites.net/categorias/tipos-conta/{modelParameter.AccountTypeId}");
 
         categroySelect = Categories.Where(x => x.Id == modelParameter.CategoryId).FirstOrDefault();
         model = modelParameter;               
@@ -52,7 +52,5 @@
           response =  await Http.PutAsJsonAsync($"https://financial-manager.azurewebsites.net/subcategorias/{model.Id}", model);
 
         MudDialog.Close(DialogResult.Ok<HttpResponseMessage>(response));
-
     }
-    
 }

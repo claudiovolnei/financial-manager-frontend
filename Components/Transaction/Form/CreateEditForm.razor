@@ -76,7 +76,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Subcategories = await Http.GetFromJsonAsync<SubcategoryResponse[]>("https://financial-manager.azurewebsites.net/subcategorias");
+        Subcategories = await Http.GetFromJsonAsync<SubcategoryResponse[]>($"https://financial-manager.azurewebsites.net/subcategorias/tipos-conta/{ modelParameter.AccountTypeId}");
 
         SubcategroySelect = Subcategories.Where(x => x.Id == modelParameter.SubcategoryId).FirstOrDefault();
 

@@ -57,19 +57,39 @@ else
 
 
 @code {
+    [CascadingParameter]
+    public MainLayout Layout { get; set; }
+    [Inject] private ServiceStateCategory? service { get; set; }
+    private ServiceStateCategory Service => service;
     MudMessageBox? mbox { get; set; }
     HttpResponseMessage? response;
     private SubcategoryResponse[]? subcategories;
 
     protected override async Task OnInitializedAsync()
     {
-        subcategories = await Http.GetFromJsonAsync<SubcategoryResponse[]>("https://financial-manager.azurewebsites.net/subcategorias");
+        this.Service.EventClick += this.SelectAccount;
+        await GetSubcategories(Layout.AccountTypeIdSelect);
     }
+
+    private async Task GetSubcategories(int accountId)
+    {
+        subcategories = await Http.GetFromJsonAsync<SubcategoryResponse[]>($"https://financial-manager.azurewebsites.net/subcategorias/tipos-conta/{accountId}");
+    }
+    private void SelectAccount(object sender, EventArgs e)
+    {      
+        Task.Run(async () => await GetSubcategories(Layout.AccountTypeIdSelect));   
+
+        this.InvokeAsync(StateHasChanged);
+    }
+    public void Dispose()
+        => this.Service.EventClick -= this.SelectAccount;
 
     private async Task CreateSubcategory()
     {
         var parameters = new DialogParameters();
-        parameters.Add("modelParameter", new SubcategoryRequest());
+        parameters.Add("modelParameter", new SubcategoryRequest() {
+            AccountTypeId = Layout.AccountTypeIdSelect
+        });
         var dialog = await DialogService.Show<CreateEditForm>("Criar Subcategoria", parameters).Result;
 
         response = dialog.Data as HttpResponseMessage ?? null;
@@ -89,7 +109,12 @@ else
     {
         var parameters = new DialogParameters();
         var options = new DialogOptions { CloseOnEscapeKey = true };
-        parameters.Add("modelParameter", new SubcategoryRequest { Name = subcategoryResponse.Name, CategoryId = subcategoryResponse.Category.Id, Id = subcategoryResponse.Id});
+        parameters.Add("modelParameter", new SubcategoryRequest { 
+            Name = subcategoryResponse.Name, 
+            CategoryId = subcategoryResponse.Category.Id, 
+            Id = subcategoryResponse.Id,
+            AccountTypeId = Layout.AccountTypeIdSelect
+        });
         var dialog = await DialogService.Show<CreateEditForm>("Alterar Subcategoria", parameters,options).Result;
 
         response = dialog.Data as HttpResponseMessage ?? null;

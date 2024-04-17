@@ -39,7 +39,6 @@
           response =  await Http.PutAsJsonAsync($"https://financial-manager.azurewebsites.net/categorias/{model.Id}", model);
 
         MudDialog.Close(DialogResult.Ok<HttpResponseMessage>(response));
-
     }
     
 }    
