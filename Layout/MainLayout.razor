@@ -1,7 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @inject HttpClient Http
 
-<CascadingValue Value="this">
 <MudLayout>
     <MudThemeProvider/>
     <MudDialogProvider
@@ -27,11 +26,12 @@
             <MudText Typo="Typo.h6">Gestão Financeira</MudText>
         </MudDrawerHeader>
         <MudNavMenu>
-    <MudNavLink Href="/gestao-financeira/historico" Match="NavLinkMatch.All">Historico</MudNavLink>
-    <MudNavLink Href="/gestao-financeira/categoria" Match="NavLinkMatch.All">Categoria</MudNavLink>
-    <MudNavLink Href="/gestao-financeira/subcategoria" Match="NavLinkMatch.All">Subcategoria</MudNavLink>
-</MudNavMenu>
+            <MudNavLink Href="/gestao-financeira/historico" Match="NavLinkMatch.All">Historico</MudNavLink>
+                <MudNavLink Href="/gestao-financeira/categoria" Match="NavLinkMatch.All">Categoria</MudNavLink>
+                <MudNavLink Href="/gestao-financeira/subcategoria" Match="NavLinkMatch.All">Subcategoria</MudNavLink>
+        </MudNavMenu>
     </MudDrawer>
+    <CascadingValue Value="AccountTypeIdSelect">
     <MudMainContent>
         <MudContainer>
             @if(_isInitComplete)
@@ -40,12 +40,10 @@
             }
         </MudContainer>
     </MudMainContent>
+    </CascadingValue>
 </MudLayout>
-</CascadingValue>
 
 @code{
-    [Inject] private ServiceStateCategory? service {get; set;}
-    private ServiceStateCategory Service => service;
     bool open = false;
     AccountTypeResponse[]? AccountTypes;
     string? AccountTypeSelect;
@@ -53,19 +51,19 @@
     private bool _isInitComplete = false;
     protected override async Task OnInitializedAsync()
     {
-        AccountTypes = await Http.GetFromJsonAsync<AccountTypeResponse[]>("https://financial-manager.azurewebsites.net/tipos-conta");
-
+        AccountTypes = await Http.GetFromJsonAsync<AccountTypeResponse[]>($"https://financial-manager.azurewebsites.net/tipos-conta");
+            
         AccountTypeSelect = AccountTypes?[0].Name;
         AccountTypeIdSelect = AccountTypes[0].Id;
+
 
         _isInitComplete = true;
     }
 
-    public void SelectAccount(AccountTypeResponse accountTypeResponse) 
+    public async Task SelectAccount(AccountTypeResponse accountTypeResponse) 
     {
         AccountTypeSelect = accountTypeResponse.Name;
-        AccountTypeIdSelect = accountTypeResponse.Id; 
-        this.Service.GetCategoriesService(this);
+        AccountTypeIdSelect = accountTypeResponse.Id;
     }
 
     public record struct AccountTypeResponse(int Id, string Name);

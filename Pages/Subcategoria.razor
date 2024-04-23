@@ -58,37 +58,31 @@ else
 
 @code {
     [CascadingParameter]
-    public MainLayout Layout { get; set; }
-    [Inject] private ServiceStateCategory? service { get; set; }
-    private ServiceStateCategory Service => service;
+    public int AccountTypeIdSelect { get; set; }
     MudMessageBox? mbox { get; set; }
     HttpResponseMessage? response;
     private SubcategoryResponse[]? subcategories;
 
     protected override async Task OnInitializedAsync()
     {
-        this.Service.EventClick += this.SelectAccount;
-        await GetSubcategories(Layout.AccountTypeIdSelect);
+        await GetSubcategories(AccountTypeIdSelect);
     }
 
     private async Task GetSubcategories(int accountId)
     {
         subcategories = await Http.GetFromJsonAsync<SubcategoryResponse[]>($"https://financial-manager.azurewebsites.net/subcategorias/tipos-conta/{accountId}");
     }
-    private void SelectAccount(object sender, EventArgs e)
-    {      
-        Task.Run(async () => await GetSubcategories(Layout.AccountTypeIdSelect));   
 
-        this.InvokeAsync(StateHasChanged);
+    protected override async Task OnParametersSetAsync()
+    {
+        await GetSubcategories(AccountTypeIdSelect);
     }
-    public void Dispose()
-        => this.Service.EventClick -= this.SelectAccount;
 
     private async Task CreateSubcategory()
     {
         var parameters = new DialogParameters();
         parameters.Add("modelParameter", new SubcategoryRequest() {
-            AccountTypeId = Layout.AccountTypeIdSelect
+            AccountTypeId = AccountTypeIdSelect
         });
         var dialog = await DialogService.Show<CreateEditForm>("Criar Subcategoria", parameters).Result;
 
@@ -113,7 +107,7 @@ else
             Name = subcategoryResponse.Name, 
             CategoryId = subcategoryResponse.Category.Id, 
             Id = subcategoryResponse.Id,
-            AccountTypeId = Layout.AccountTypeIdSelect
+            AccountTypeId = AccountTypeIdSelect
         });
         var dialog = await DialogService.Show<CreateEditForm>("Alterar Subcategoria", parameters,options).Result;
 

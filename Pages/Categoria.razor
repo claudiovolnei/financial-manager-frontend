@@ -4,7 +4,6 @@
 @using FinancialManager.Web.Components.Category.Form
 @using FinancialManager.Web.Components.Category.Model
 @inject ISnackbar Snackbar
-@implements IDisposable
 
 <PageTitle>Categoria</PageTitle>
 
@@ -58,37 +57,30 @@ else
 
 @code {
     [CascadingParameter]
-    public MainLayout Layout { get; set; }
-    [Inject] private ServiceStateCategory? service { get; set; }
-    private ServiceStateCategory Service => service;
-    private CategoryResponse[]? Categories = [];
+    public int AccountTypeIdSelect { get; set; }
+    private CategoryResponse[]? Categories;
     MudMessageBox? mbox { get; set; }
     HttpResponseMessage? response;
 
     protected override async Task OnInitializedAsync()
-    {
-        this.Service.EventClick += this.SelectAccount;
-        await GetCategories(Layout.AccountTypeIdSelect);
+    {        
+        Categories = await GetCategories(AccountTypeIdSelect);
     }
 
-    private void SelectAccount(object sender, EventArgs e)
-    {      
-        Task.Run(async () => await GetCategories(Layout.AccountTypeIdSelect));   
-
-        this.InvokeAsync(StateHasChanged);
+    protected override async Task OnParametersSetAsync()
+    {        
+        Categories = await GetCategories(AccountTypeIdSelect);           
     }
-    public void Dispose()
-        => this.Service.EventClick -= this.SelectAccount;
 
-    protected async Task GetCategories(int accountId)
+    protected async Task<CategoryResponse[]> GetCategories(int accountId)
     {
-        Categories = await Http.GetFromJsonAsync<CategoryResponse[]>($"https://financial-manager.azurewebsites.net/categorias/tipos-conta/{accountId}");         
+        return await Http.GetFromJsonAsync<CategoryResponse[]>($"https://financial-manager.azurewebsites.net/categorias/tipos-conta/{accountId}")?? [];
     }
 
     private async Task CreateCategory()
     {
         var parameters = new DialogParameters();
-        parameters.Add("modelParameter", new CategoryRequest() { AccountTypeId = Layout.AccountTypeIdSelect});
+        parameters.Add("modelParameter", new CategoryRequest() { AccountTypeId = AccountTypeIdSelect});
         var dialog = await DialogService.Show<CreateEditForm>("Criar categoria", parameters).Result;
 
         response = dialog.Data as HttpResponseMessage ?? null;

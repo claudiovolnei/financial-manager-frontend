@@ -57,11 +57,11 @@
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" OnClick="(() => EditTransaction(transaction))"></MudIconButton>
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="(() => DeleteTransaction(transaction.Id))"></MudIconButton>
                              </MudItem>
-                             <MudItem xs="1" sm="2">
+                             @* <MudItem xs="1" sm="2">
                                  <MudIcon Icon="@Icons.Material.Filled.Payment"Style="font-size: 3rem" />
-                             </MudItem>
+                             </MudItem> *@
                              <!-- Segunda coluna com duas linhas alinhadas com o ícone -->
-                             <MudItem xs="5" sm="5" >
+                             <MudItem xs="6" sm="7" >
                                  <MudText Typo="Typo.subtitle1">@transaction.Title</MudText>
                                  <MudText Typo="Typo.body2">@transaction.Subcategory.Name</MudText>
                              </MudItem>
@@ -80,49 +80,6 @@
         </MudCardActions>
     </MudCard>
 }
-@* <MudExpansionPanels MultiExpansion="true">
-    @foreach(var typecard in ValuesTypeCard)
-    {
-        if(typecard.Equals(TypeCard.Vazio))
-            continue;
-
-        <MudExpansionPanel Text="@DisplayName(typecard)">
-            @if(Transactions == null)
-            {
-                <p><em>Loading...</em></p>
-            }
-            else
-            {
-                <h4 style="text-align: right;">Saldo: @($"R$ {@SumTotal(Transactions, typecard):#,##0.00}") </h4>            
-                <MudGrid>
-                    @foreach(var transaction in Transactions)
-                    {
-                        @if(transaction.TypeCard == typecard)
-                        {  
-                             <!-- Primeira coluna com ícone grande -->
-                             <MudItem sm="1" xs="1">
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" OnClick="(() => EditTransaction(transaction))"></MudIconButton>
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="(() => DeleteTransaction(transaction.Id))"></MudIconButton>
-                             </MudItem>
-                             <MudItem xs="2" sm="1">
-                                 <MudIcon Icon="@Icons.Material.Filled.Payment"Style="font-size: 3rem" />
-                             </MudItem>
-                             <!-- Segunda coluna com duas linhas alinhadas com o ícone -->
-                             <MudItem xs="5" sm="6" >
-                                 <MudText Typo="Typo.subtitle1">@transaction.Title</MudText>
-                                 <MudText Typo="Typo.body2">@transaction.Subcategory.Name</MudText>
-                             </MudItem>
-                             <!-- Terceira coluna com texto -->
-                             <MudItem xs="4" sm="4"  style="text-align: right;">
-                                 <MudText Typo="Typo.body1" Style="@($"color:{colorValue(transaction.ValuePayment)};")">@($"R$ {@transaction.ValuePayment:###0.00}")</MudText>
-                             </MudItem>                         
-                        }
-                    }                    
-                </MudGrid>
-            }
-        </MudExpansionPanel>
-    }        
-</MudExpansionPanels> *@
 
 <MudMessageBox @ref="mbox" Title="Excluir" CancelText="Cancel">
     <MessageContent>
@@ -136,9 +93,7 @@
 @code {
     private MudTheme Theme = new MudTheme();
     [CascadingParameter]
-    public MainLayout Layout { get; set; }
-    [Inject] private ServiceStateCategory? service { get; set; }
-    private ServiceStateCategory Service => service;
+    public int AccountTypeIdSelect { get; set; }
     private TransactionOrderReponse[]? Transactions;
     MudMessageBox? mbox { get; set; }
     HttpResponseMessage? response;
@@ -150,29 +105,23 @@
     MudBlazor.Utilities.MudColor colorValue(double valuePayment) => valuePayment > 0 ? Theme.Palette.Success : Theme.Palette.Error;
     protected override async Task OnInitializedAsync()    
     {
-        this.Service.EventClick += this.SelectAccount;
         if(string.IsNullOrEmpty(this.MonthValue))
             this.MonthValue = TypesMonth.Where(x => x.Item1 == DateTime.Now.Month).FirstOrDefault().Item2;
 
         if(YearValue == 0)
             this.YearValue = DateTime.Now.Year;
 
-        await GetTransactions(Layout.AccountTypeIdSelect);
+        await GetTransactions(AccountTypeIdSelect);
 
     }
-
-    private void SelectAccount(object sender, EventArgs e)
-    {      
-        Task.Run(async () => await GetTransactions(Layout.AccountTypeIdSelect));   
-
-        this.InvokeAsync(StateHasChanged);
-    }
-    public void Dispose()
-        => this.Service.EventClick -= this.SelectAccount;
-
     public async Task GetTransactions(int accountId) 
     {
         Transactions = await Http.GetFromJsonAsync<TransactionOrderReponse[]?>($"https://financial-manager.azurewebsites.net/transaction-order/tipos-conta/{accountId}?Year={this.YearValue}&Month={ TypesMonth.Where(x => x.Item2 == this.MonthValue).FirstOrDefault().Item1}");
+    }
+
+    protected override async Task OnParametersSetAsync() 
+    {
+        await GetTransactions(AccountTypeIdSelect);
     }
     public async Task NextMonth()
     {
@@ -235,7 +184,7 @@
     {
         var parameters = new DialogParameters();
         parameters.Add("modelParameter", new TransactionOrderRequest(){
-            AccountTypeId = Layout.AccountTypeIdSelect
+            AccountTypeId = AccountTypeIdSelect
         });
         var dialog = await DialogService.Show<CreateEditForm>("Transação", parameters).Result;
 
@@ -265,7 +214,7 @@
                 TypeCard = transactionOrderReponse.TypeCard,
                 DateOrder = transactionOrderReponse.DateOrder,
                 DatePayment = transactionOrderReponse.DatePayment,
-                AccountTypeId = Layout.AccountTypeIdSelect
+                AccountTypeId = AccountTypeIdSelect
             });
         var dialog = await DialogService.Show<CreateEditForm>("Alterar transação", parameters,options).Result;
 
