@@ -1,9 +1,22 @@
 @page "/"
+@using FinancialManager.Web.Components.Shared
 <br>
 <MudCard>
     <MudCardContent>
-        <MudText>Saldo</MudText>
-        <MudText Typo="Typo.body2">Saldo: R$ 0, 00</MudText>
+        <MonthYear />
+        <MudGrid Spacing="2" Justify="Justify.Center">
+            <MudItem>
+                <MudText Style="font-size: 2em;" Typo="Typo.body2">R$ 0,00</MudText>
+            </MudItem>             
+        </MudGrid>   
+        <MudGrid Spacing="2" Justify="Justify.Center">
+            <MudItem>
+                <MudText Style="font-size: medium;color: green" Typo="Typo.body2">Entradas R$ 0,00</MudText>
+            </MudItem>             
+            <MudItem>
+                <MudText Style="font-size: medium;color: red" Typo="Typo.body2">Saídas R$ 0,00</MudText>
+            </MudItem>             
+        </MudGrid>      
     </MudCardContent>
     <MudCardActions>
        
