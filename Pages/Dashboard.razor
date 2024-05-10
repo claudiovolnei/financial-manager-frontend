@@ -1,20 +1,23 @@
 @page "/"
 @using FinancialManager.Web.Components.Shared
+@inject HttpClient Http
+@using FinancialManager.Web.Components.Dashboard.Model
+
 <br>
 <MudCard>
     <MudCardContent>
         <MonthYear />
         <MudGrid Spacing="2" Justify="Justify.Center">
             <MudItem>
-                <MudText Style="font-size: 2em;" Typo="Typo.body2">R$ 0,00</MudText>
+                <MudText Style="font-size: 2em;" Typo="Typo.body2">R$ @{Totals.ToString();}</MudText>
             </MudItem>             
         </MudGrid>   
         <MudGrid Spacing="2" Justify="Justify.Center">
             <MudItem>
-                <MudText Style="font-size: medium;color: green" Typo="Typo.body2">Entradas R$ 0,00</MudText>
+                <MudText Style="font-size: medium;color: green" Typo="Typo.body2">Entradas R$ @{Entrys.ToString();}</MudText>
             </MudItem>             
             <MudItem>
-                <MudText Style="font-size: medium;color: red" Typo="Typo.body2">Saídas R$ 0,00</MudText>
+                <MudText Style="font-size: medium;color: red" Typo="Typo.body2">Saídas R$ @{Outputs.ToString();}</MudText>
             </MudItem>             
         </MudGrid>      
     </MudCardContent>
@@ -25,7 +28,7 @@
 <br>
 <MudCard>
     <MudCardHeader>
-        <CardHeaderContent>
+        <CardHeaderContent Justify="Justify.Center">
             <MudText Typo="Typo.h6">Lançamentos por categoria</MudText>
         </CardHeaderContent>
         
@@ -44,6 +47,41 @@
 </MudCard>
 
 @code {
-    public double[] data = { 25, 77, 28, 5 };
-    public string[] labels = { "Teste", "Tette 1", "Teste 2", "Teste 3" };
+    [CascadingParameter]
+    public int AccountTypeIdSelect { get; set; }
+    public double[] data = [];
+    public string[] labels = [];
+    public decimal Entrys = 0;
+    public decimal Outputs = 0;
+    public decimal Totals = 0;
+    private DashboardResponse DashboardResponse { get; set;}
+    protected override async Task OnInitializedAsync()    
+    {
+        @* if(string.IsNullOrEmpty(this.MonthValue))
+            this.MonthValue = TypesMonth.Where(x => x.Item1 == DateTime.Now.Month).FirstOrDefault().Item2;
+
+        if(YearValue == 0)
+            this.YearValue = DateTime.Now.Year; *@
+
+        await GetDashboard(AccountTypeIdSelect);
+
+    }
+    private async Task GetDashboard(int accountId)
+    {
+        DashboardResponse = await Http.GetFromJsonAsync<DashboardResponse>($"https://financial-manager.azurewebsites.net/transaction-order/dashboard/{accountId}?Year=2024&Month=4");
+        @* await Http.GetFromJsonAsync<DashboardResponse>($"https://financial-manager.azurewebsites.net/transaction-order/tipos-conta/{accountId}?Year={this.YearValue}&Month={ TypesMonth.Where(x => x.Item2 == this.MonthValue).FirstOrDefault().Item1}"); *@
+
+        data = DashboardResponse.Categories.Select(x => x.Item2).ToArray();
+        labels = DashboardResponse.Categories.Select(x => x.Item1).ToArray();
+
+        Entrys = DashboardResponse.Entrys;
+        Outputs = DashboardResponse.Outputs;
+        Totals = DashboardResponse.Amount;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await GetDashboard(AccountTypeIdSelect);
+    }
+    
 }
