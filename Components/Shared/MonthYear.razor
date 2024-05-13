@@ -3,7 +3,7 @@
         <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="(()=>BackMonth())"Size="Size.Small" />
     </MudItem>             
     <MudItem>
-        <MudText Typo="Typo.h5" Align="Align.Center">@MonthValue/@YearValue</MudText>
+        <MudText Typo="Typo.h5" Align="Align.Center">@monthName/@YearValue</MudText>
     </MudItem>
     <MudItem>
         <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowRight" OnClick="(()=>NextMonth())"Size="Size.Small" />
@@ -11,30 +11,48 @@
 </MudGrid>
 
 @code {
-    public string? MonthValue;
-    public int YearValue;
+    [Parameter]
+    public int MonthValue { get; set; }
+    public string monthName = String.Empty;
+    [Parameter]
+    public int YearValue { get; set; }
+    [Parameter]
+    public EventCallback<int> MonthValueChanged { get; set; }
+    [Parameter]
+    public EventCallback<int> YearValueChanged { get; set; }
 
     protected override async Task OnInitializedAsync()    
+    
     {
-        if(string.IsNullOrEmpty(this.MonthValue))
-            this.MonthValue = TypesMonth.Where(x => x.Item1 == DateTime.Now.Month).FirstOrDefault().Item2;
+        if(string.IsNullOrEmpty(this.monthName))
+        {
+            this.monthName = TypesMonth.Where(x => x.Item1 == DateTime.Now.Month).FirstOrDefault().Item2;
+            this.MonthValue = TypesMonth.Where(x => x.Item1 == DateTime.Now.Month).FirstOrDefault().Item1;
+        }
 
         if(YearValue == 0)
             this.YearValue = DateTime.Now.Year;
+
+        await YearValueChanged.InvokeAsync(this.YearValue);
+        await MonthValueChanged.InvokeAsync(this.MonthValue);
     }
 
     public async Task NextMonth()
     {
-        if(MonthValue.Equals("Dezembro"))
+        if(monthName.Equals("Dezembro"))
         {
-            this.MonthValue = TypesMonth.Where(x => x.Item1 == 1).FirstOrDefault().Item2;
+            this.monthName = TypesMonth.Where(x => x.Item1 == 1).FirstOrDefault().Item2;
+            this.MonthValue = TypesMonth.Where(x => x.Item1 == 1).FirstOrDefault().Item1;
             this.YearValue = YearValue + 1;
         }
         else
         {
-            this.MonthValue = TypesMonth
-                    .Where(x => x.Item1 == TypesMonth.Where(x => x.Item2 == this.MonthValue).FirstOrDefault().Item1 + 1)
+            this.monthName = TypesMonth
+                    .Where(x => x.Item1 == TypesMonth.Where(x => x.Item2 == this.monthName).FirstOrDefault().Item1 + 1)
                     .FirstOrDefault().Item2;
+            this.MonthValue = TypesMonth
+                    .Where(x => x.Item1 == TypesMonth.Where(x => x.Item2 == this.monthName).FirstOrDefault().Item1)
+                    .FirstOrDefault().Item1;
         }
 
         await OnInitializedAsync();
@@ -42,16 +60,20 @@
     }
     public async Task BackMonth()
     {
-        if(MonthValue.Equals("Janeiro"))
+        if(monthName.Equals("Janeiro"))
         {
-            this.MonthValue = TypesMonth.Where(x => x.Item1 == 12).FirstOrDefault().Item2;
+            this.monthName = TypesMonth.Where(x => x.Item1 == 12).FirstOrDefault().Item2;
+            this.MonthValue = TypesMonth.Where(x => x.Item1 == 12).FirstOrDefault().Item1;
             this.YearValue = YearValue -1;
         }
         else
         {
-            this.MonthValue = TypesMonth
-                    .Where(x => x.Item1 == TypesMonth.Where(x => x.Item2 == this.MonthValue).FirstOrDefault().Item1 -1)
+            this.monthName = TypesMonth
+                    .Where(x => x.Item1 == TypesMonth.Where(x => x.Item2 == this.monthName).FirstOrDefault().Item1 -1)
                     .FirstOrDefault().Item2;
+            this.MonthValue = TypesMonth
+                    .Where(x => x.Item1 == TypesMonth.Where(x => x.Item2 == this.monthName).FirstOrDefault().Item1)
+                    .FirstOrDefault().Item1;
         }
 
         await OnInitializedAsync();
