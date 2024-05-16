@@ -4,5 +4,5 @@ namespace FinancialManager.Web.Components.Dashboard.Model
         decimal Amount,
         decimal Entrys,
         decimal Outputs,
-        IList<Tuple<string, decimal>> Categories);
+        List<Tuple<string, decimal>> Categories);
 }
