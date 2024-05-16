@@ -40,8 +40,6 @@
     if(typecard.Equals(TypeCard.Vazio))
         continue;
     <h3>@DisplayName(typecard)</h3>    
-    @* <MudCard>
-        <MudCardContent> *@
             @if(Transactions == null)
             {
                 <p><em>Loading...</em></p>
@@ -82,8 +80,6 @@
                         
                     }                    
             }
-        @* </MudCardContent>
-    </MudCard> *@
 }
 
 <MudMessageBox @ref="mbox" Title="Excluir" CancelText="Cancel">
