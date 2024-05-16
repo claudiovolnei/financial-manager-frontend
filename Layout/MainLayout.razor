@@ -14,7 +14,7 @@
     <MudAppBar Elevation="1">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
         <MudSpacer />
-    <MudMenu StartIcon="@Icons.Material.Outlined.PeopleAlt" Label="@AccountTypeSelect" Color="Color.Success" Variant="Variant.Filled" AnchorOrigin="@AnchorOrigin" TransformOrigin="@TransformOrigin">
+    <MudMenu StartIcon="@Icons.Material.Outlined.CreditCard" Label="@AccountTypeSelect" Color="Color.Success" Variant="Variant.Filled" AnchorOrigin="@AnchorOrigin" TransformOrigin="@TransformOrigin">
         @foreach(var accountType in AccountTypes) 
         {
             <MudMenuItem OnTouch="() => SelectAccount(accountType)" OnClick="() => SelectAccount(accountType)" Value="@accountType.Id">@accountType.Name</MudMenuItem>
