@@ -40,20 +40,23 @@
     if(typecard.Equals(TypeCard.Vazio))
         continue;
     <h3>@DisplayName(typecard)</h3>    
-    <MudCard>
-        <MudCardContent>
+    @* <MudCard>
+        <MudCardContent> *@
             @if(Transactions == null)
             {
                 <p><em>Loading...</em></p>
             }
             else
             {
-                <h4 style="text-align: right;">Saldo: @($"R$ {@SumTotal(Transactions, typecard):#,##0.00}") </h4>            
-                <MudGrid>
+                <h4 style="text-align: right;">Saldo: @($"R$ {@SumTotal(Transactions, typecard):#,##0.00}") </h4>
+                
                     @foreach(var transaction in Transactions)
                     {
                         @if(transaction.TypeCard == typecard)
                         {  
+                        <MudCard>
+                            <MudCardContent style="margin-bottom: 5px;">            
+                            <MudGrid>
                              <!-- Primeira coluna com ícone grande -->
                              <MudItem sm="1" xs="2">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" OnClick="(() => EditTransaction(transaction))"></MudIconButton>
@@ -70,17 +73,17 @@
                              <!-- Terceira coluna com texto -->
                              <MudItem xs="4" sm="4"  style="text-align: right;">
                                  <MudText Typo="Typo.body1" Style="@($"color:{colorValue(transaction.ValuePayment)};")">@($"R$ {@transaction.ValuePayment:###0.00}")</MudText>
-                             </MudItem>                         
+                             </MudItem>                        
+                              
+                            </MudGrid>
+                            </MudCardContent>
+                        </MudCard>
                         }
                         
                     }                    
-                </MudGrid>
             }
-        </MudCardContent>
-        <MudCardActions>
-        
-        </MudCardActions>
-    </MudCard>
+        @* </MudCardContent>
+    </MudCard> *@
 }
 
 <MudMessageBox @ref="mbox" Title="Excluir" CancelText="Cancel">
