@@ -73,12 +73,13 @@
     {
         try
         {
+            Console.WriteLine(DashboardResponse);
             DashboardResponse = await Http.GetFromJsonAsync<DashboardResponse>($"https://financial-manager.azurewebsites.net/transaction-order/dashboard/{accountId}?Year={this.YearValue}&Month={ this.MonthValue}");
 
             
             data = DashboardResponse.Categories.Select(x => Convert.ToDouble(x.Item2)).ToArray();
             labels = DashboardResponse.Categories.Select(x => $"{x.Item1} R$ {String.Format("{0:#0.00}",x.Item2)}").ToArray();    
-            
+            Console.WriteLine(DashboardResponse);
         }
         catch(Exception ex)
         {
