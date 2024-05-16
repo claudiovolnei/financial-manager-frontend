@@ -71,14 +71,12 @@
     }
     private async Task GetDashboard(int accountId)
     {
-        var dashboard = await Http.GetFromJsonAsync<DashboardResponse>($"https://financial-manager.azurewebsites.net/transaction-order/dashboard/{accountId}?Year={this.YearValue}&Month={ this.MonthValue}");
+        DashboardResponse = await Http.GetFromJsonAsync<DashboardResponse>($"https://financial-manager.azurewebsites.net/transaction-order/dashboard/{accountId}?Year={this.YearValue}&Month={ this.MonthValue}");
 
-        if(dashboard != null) 
+        if(!DashboardResponse.Categories.Any()) 
         {
-            DashboardResponse = 
-            
-            data = DashboardResponse.Categories.Select(x => Convert.ToDouble(x.Item2)).ToArray() ?? [];
-            labels = DashboardResponse.Categories.Select(x => x.Item1).ToArray() ?? [];        
+            data = DashboardResponse.Categories.Select(x => Convert.ToDouble(x.Item2)).ToArray();
+            labels = DashboardResponse.Categories.Select(x => x.Item1).ToArray();        
         }
     } 
 }
