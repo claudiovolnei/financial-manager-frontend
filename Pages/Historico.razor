@@ -7,11 +7,12 @@
 @using System.ComponentModel.DataAnnotations
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@using FinancialManager.Web.Components.Shared
 
 <PageTitle>Historico</PageTitle>
 <br>
 <MudGrid Spacing="2" Justify="Justify.Center">
-    <MudItem>
+    @* <MudItem>
         <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="(()=>BackMonth())"Size="Size.Small" />
     </MudItem>             
     <MudItem>
@@ -19,7 +20,8 @@
     </MudItem>
     <MudItem>
         <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowRight" OnClick="(()=>NextMonth())"Size="Size.Small" />
-    </MudItem>
+    </MudItem> *@
+    <MonthYear @bind-YearValue="YearValue" MonthValueChanged="HandleValueChanged"/>
 </MudGrid>
 <MudGrid Spacing="2" Justify="Justify.Center">
     <MudItem>
@@ -100,79 +102,29 @@
     private double Total;
     public HashSet<TypeCard> ValuesTypeCard { get; set; } = Enum.GetValues<TypeCard>().ToHashSet();
     public static string DisplayName(TypeCard typeCard) => typeCard.GetAttribute<DisplayAttribute>()?.Name?? string.Empty;
-    public string? MonthValue;
+    public int MonthValue;
     public int YearValue;
     MudBlazor.Utilities.MudColor colorValue(double valuePayment) => valuePayment > 0 ? Theme.Palette.Success : Theme.Palette.Error;
     protected override async Task OnInitializedAsync()    
     {
-        if(string.IsNullOrEmpty(this.MonthValue))
-            this.MonthValue = TypesMonth.Where(x => x.Item1 == DateTime.Now.Month).FirstOrDefault().Item2;
-
-        if(YearValue == 0)
-            this.YearValue = DateTime.Now.Year;
-
         await GetTransactions(AccountTypeIdSelect);
-
     }
     public async Task GetTransactions(int accountId) 
     {
-        Transactions = await Http.GetFromJsonAsync<TransactionOrderReponse[]?>($"https://financial-manager.azurewebsites.net/transaction-order/tipos-conta/{accountId}?Year={this.YearValue}&Month={ TypesMonth.Where(x => x.Item2 == this.MonthValue).FirstOrDefault().Item1}");
+        Transactions = await Http.GetFromJsonAsync<TransactionOrderReponse[]?>($"https://financial-manager.azurewebsites.net/transaction-order/tipos-conta/{accountId}?Year={this.YearValue}&Month={this.MonthValue}");
+    }
+
+    public async Task HandleValueChanged(int monthValue)
+    {
+        this.MonthValue = monthValue;
+        await GetTransactions(AccountTypeIdSelect);
     }
 
     protected override async Task OnParametersSetAsync() 
     {
-        await GetTransactions(AccountTypeIdSelect);
+        if(this.MonthValue != 0)
+            await GetTransactions(AccountTypeIdSelect);
     }
-    public async Task NextMonth()
-    {
-        if(MonthValue.Equals("Dezembro"))
-        {
-            this.MonthValue = TypesMonth.Where(x => x.Item1 == 1).FirstOrDefault().Item2;
-            this.YearValue = YearValue + 1;
-        }
-        else
-        {
-            this.MonthValue = TypesMonth
-                    .Where(x => x.Item1 == TypesMonth.Where(x => x.Item2 == this.MonthValue).FirstOrDefault().Item1 + 1)
-                    .FirstOrDefault().Item2;
-        }
-
-        await OnInitializedAsync();
-        
-    }
-    public async Task BackMonth()
-    {
-        if(MonthValue.Equals("Janeiro"))
-        {
-            this.MonthValue = TypesMonth.Where(x => x.Item1 == 12).FirstOrDefault().Item2;
-            this.YearValue = YearValue -1;
-        }
-        else
-        {
-            this.MonthValue = TypesMonth
-                    .Where(x => x.Item1 == TypesMonth.Where(x => x.Item2 == this.MonthValue).FirstOrDefault().Item1 -1)
-                    .FirstOrDefault().Item2;
-        }
-
-        await OnInitializedAsync();
-    }
-
-    static List<(int, string)> TypesMonth = new List<(int, string)>
-    {
-        (1, "Janeiro"),
-        (2, "Fevereiro"),
-        (3, "Março"),
-        (4, "Abril"),
-        (5, "Maio"),
-        (6, "Junho"),
-        (7, "Julho"),
-        (8, "Agosto"),
-        (9, "Setembro"),
-        (10, "Outubro"),
-        (11, "Novembro"),
-        (12, "Dezembro"),
-    };
-
     private double SumTotal(TransactionOrderReponse[] transactionsOrderReponse, TypeCard typeCard)
     {
         return transactionsOrderReponse
