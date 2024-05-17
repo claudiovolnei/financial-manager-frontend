@@ -4,5 +4,7 @@ namespace FinancialManager.Web.Components.Dashboard.Model
         decimal Amount,
         decimal Entrys,
         decimal Outputs,
-        List<(string Item1, decimal Item2)> Categories);
+        List<CategoriesGroup> Categories);
 }
+
+public record struct CategoriesGroup(string Item1, decimal Item2);
