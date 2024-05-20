@@ -5,6 +5,7 @@
 @using System.Globalization
 @using FinancialManager.Web.util
 @using System.ComponentModel.DataAnnotations
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
@@ -47,10 +48,23 @@
         <MudItem>
             <MudDatePicker Label="Data pagamento" @bind-Date="model.DatePayment"/>
         </MudItem>
+        @*Nested inline dialog*@
+        <MudDialog @bind-IsVisible="dialogDelete">
+            <DialogContent>
+                <MudText Class="nested">Deseja excluir o registro?</MudText>
+            </DialogContent>
+            <DialogActions>
+                <MudButton OnClick="CloseDialogDelete">Cancel</MudButton>
+                <MudButton Color="Color.Primary" OnClick="(() => DeleteTransaction())">Ok</MudButton>
+            </DialogActions>
+        </MudDialog>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
         <MudButton OnClick="Submit" Color="Color.Primary" Class="ml-auto">Salvar</MudButton>
+        @if(model.Id.HasValue) {
+            <MudButton OnClick="OpenDialogDelete" Color="Color.Error" Class="ml-auto">Excluir</MudButton>
+        }
     </DialogActions>
 </MudDialog>
 
@@ -73,7 +87,9 @@
 
     public static string DisplayName(TypeCard typeCard) => typeCard.GetAttribute<DisplayAttribute>()?.Name?? string.Empty;
     public static string DisplayName(TypeTransaction typeTransaction) => typeTransaction.GetAttribute<DisplayAttribute>()?.Name?? string.Empty;
-
+    public bool dialogDelete = false;
+    private void OpenDialogDelete() => dialogDelete = true;
+    private void CloseDialogDelete() => dialogDelete = false;
     protected override async Task OnInitializedAsync()
     {
         Subcategories = await Http.GetFromJsonAsync<SubcategoryResponse[]>($"https://financial-manager.azurewebsites.net/subcategorias/tipos-conta/{ modelParameter.AccountTypeId}");
@@ -113,5 +129,19 @@
         if(model.DatePayment.HasValue)
             model.DatePayment = DateTime.SpecifyKind(model.DatePayment.Value, DateTimeKind.Utc);
     }
+
+    private async Task DeleteTransaction()
+    {
+        using var response =  await Http.DeleteAsync($"https://financial-manager.azurewebsites.net/transaction-order/{model.Id}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Transação excluída com sucesso.", Severity.Success);
+            dialogDelete = false;
+        }
+        else
+            Snackbar.Add("Erro ao alterado transação", Severity.Error);
+    }
     
 }
+

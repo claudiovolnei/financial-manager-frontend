@@ -12,15 +12,6 @@
 <PageTitle>Historico</PageTitle>
 <br>
 <MudGrid Spacing="2" Justify="Justify.Center">
-    @* <MudItem>
-        <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowLeft" OnClick="(()=>BackMonth())"Size="Size.Small" />
-    </MudItem>             
-    <MudItem>
-        <MudText Typo="Typo.h5" Align="Align.Center">@MonthValue/@YearValue</MudText>
-    </MudItem>
-    <MudItem>
-        <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowRight" OnClick="(()=>NextMonth())"Size="Size.Small" />
-    </MudItem> *@
     <MonthYear @bind-YearValue="YearValue" MonthValueChanged="HandleValueChanged"/>
 </MudGrid>
 <MudGrid Spacing="2" Justify="Justify.Center">
@@ -39,34 +30,37 @@
 {
     if(typecard.Equals(TypeCard.Vazio))
         continue;
-    <h3>@DisplayName(typecard)</h3>    
             @if(Transactions == null)
             {
                 <p><em>Loading...</em></p>
             }
             else
             {
-                <h4 style="text-align: right;">Saldo: @($"R$ {@SumTotal(Transactions, typecard):#,##0.00}") </h4>
-                
+                <MudGrid>
+                    <MudItem xs="6" sm="4">
+                        <h6>@DisplayName(typecard)</h6>    
+                    </MudItem>
+                    <MudItem xs="6" sm="8">
+                        <h6 style="text-align: right;">Saldo: @($"R$ {@SumTotal(Transactions, typecard):#,##0.00}") </h6>                
+                    </MudItem>
+                </MudGrid>                
                     @foreach(var transaction in Transactions)
                     {
                         @if(transaction.TypeCard == typecard)
                         {  
-                        <MudCard>
+                        
+                        <MudCard OnClick="@(() => EditTransaction(transaction))" class="clickable-card">
                             <MudCardContent style="margin-bottom: 5px;">            
                             <MudGrid>
                              <!-- Primeira coluna com ícone grande -->
                              <MudItem sm="1" xs="2">
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" OnClick="(() => EditTransaction(transaction))"></MudIconButton>
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="(() => DeleteTransaction(transaction.Id))"></MudIconButton>
+                                <MudIconButton Icon="@Icons.Material.Filled.RemoveRedEye" Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" OnClick="(() => EditTransaction(transaction))"></MudIconButton>
+                                
                              </MudItem>
-                             @* <MudItem xs="1" sm="2">
-                                 <MudIcon Icon="@Icons.Material.Filled.Payment"Style="font-size: 3rem" />
-                             </MudItem> *@
                              <!-- Segunda coluna com duas linhas alinhadas com o ícone -->
                              <MudItem xs="6" sm="7" >
-                                 <MudText Typo="Typo.subtitle1">@transaction.Title</MudText>
-                                 <MudText Typo="Typo.body2">@transaction.Subcategory.Name</MudText>
+                                 <MudText Typo="Typo.subtitle1" style="font-size: large;">@transaction.Title</MudText>
+                                 <MudText Typo="Typo.body2" style="font-size: small;">@transaction.Subcategory.Name</MudText>
                              </MudItem>
                              <!-- Terceira coluna com texto -->
                              <MudItem xs="4" sm="4"  style="text-align: right;">
@@ -82,21 +76,12 @@
             }
 }
 
-<MudMessageBox @ref="mbox" Title="Excluir" CancelText="Cancel">
-    <MessageContent>
-        Deseja excluir a categoria?
-    </MessageContent>
-    <YesButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteForever">Delete!</MudButton>
-    </YesButton>
-</MudMessageBox>
-
 @code {
     private MudTheme Theme = new MudTheme();
     [CascadingParameter]
     public int AccountTypeIdSelect { get; set; }
     private TransactionOrderReponse[]? Transactions;
-    MudMessageBox? mbox { get; set; }
+    @* MudMessageBox? mbox { get; set; } *@
     HttpResponseMessage? response;
     private double Total;
     public HashSet<TypeCard> ValuesTypeCard { get; set; } = Enum.GetValues<TypeCard>().ToHashSet();
@@ -104,6 +89,9 @@
     public int MonthValue;
     public int YearValue;
     MudBlazor.Utilities.MudColor colorValue(double valuePayment) => valuePayment > 0 ? Theme.Palette.Success : Theme.Palette.Error;
+    private bool _sortNameByLength;
+    private List<string> _events = new();
+    
     protected override async Task OnInitializedAsync()    
     {
         await GetTransactions(AccountTypeIdSelect);
@@ -181,20 +169,5 @@
 
            await OnInitializedAsync();
         }
-}
-    private async Task DeleteTransaction(int id)
-    {
-        bool? result = await mbox.Show();
-
-        if(result.Value) {
-            using var response =  await Http.DeleteAsync($"https://financial-manager.azurewebsites.net/transaction-order/{id}");
-
-            if (response.IsSuccessStatusCode)
-                Snackbar.Add("Transação excluída com sucesso.", Severity.Success);
-            else
-                Snackbar.Add("Erro ao alterado transação", Severity.Error);
-        }
-
-        await OnInitializedAsync();
-   }
+    }
 }
