@@ -1,0 +1,37 @@
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudText Class="nested">Deseja excluir o registro?</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseDialog">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="(() => DeleteTransaction())">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] 
+    MudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public int IdLancamento { get; set;}
+
+    private void CloseDialog()
+    {
+        MudDialog.Close();
+    }
+
+    private async Task DeleteTransaction()
+    {
+        using var response =  await Http.DeleteAsync($"https://financial-manager.azurewebsites.net/transaction-order/{IdLancamento}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Transação excluída com sucesso.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok<HttpResponseMessage>(response));
+        }
+        else
+            Snackbar.Add("Erro ao alterado transação", Severity.Error);
+    }
+}

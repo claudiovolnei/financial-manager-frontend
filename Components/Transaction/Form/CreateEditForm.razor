@@ -4,8 +4,10 @@
 @using System.Linq;
 @using System.Globalization
 @using FinancialManager.Web.util
+@using FinancialManager.Web.Components.Shared
 @using System.ComponentModel.DataAnnotations
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <MudDialog>
     <DialogContent>
@@ -40,24 +42,14 @@
         <MudItem>
             <MudTextField Label="Valor" Format="N2"
                       @bind-Value="model.ValuePayment"  Variant="@Variant.Text" Clearable />
-            @* Mask="@(new PatternMask("R$ 00000,00"))"  *@
         </MudItem>
         <MudItem>
-            <MudDatePicker Label="Data" @bind-Date="model.DateOrder" />
+            <MudDatePicker Label="Data" Editable="true" @bind-Date="model.DateOrder" Placeholder="Selecione a data" />
         </MudItem>
         <MudItem>
-            <MudDatePicker Label="Data pagamento" @bind-Date="model.DatePayment"/>
+            <MudDatePicker Editable="true" Label="Data pagamento" @bind-Date="model.DatePayment"/>
         </MudItem>
-        @*Nested inline dialog*@
-        <MudDialog @bind-IsVisible="dialogDelete">
-            <DialogContent>
-                <MudText Class="nested">Deseja excluir o registro?</MudText>
-            </DialogContent>
-            <DialogActions>
-                <MudButton OnClick="CloseDialogDelete">Cancel</MudButton>
-                <MudButton Color="Color.Primary" OnClick="(() => DeleteTransaction())">Ok</MudButton>
-            </DialogActions>
-        </MudDialog>
+       
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
@@ -87,9 +79,6 @@
 
     public static string DisplayName(TypeCard typeCard) => typeCard.GetAttribute<DisplayAttribute>()?.Name?? string.Empty;
     public static string DisplayName(TypeTransaction typeTransaction) => typeTransaction.GetAttribute<DisplayAttribute>()?.Name?? string.Empty;
-    public bool dialogDelete = false;
-    private void OpenDialogDelete() => dialogDelete = true;
-    private void CloseDialogDelete() => dialogDelete = false;
     protected override async Task OnInitializedAsync()
     {
         Subcategories = await Http.GetFromJsonAsync<SubcategoryResponse[]>($"https://financial-manager.azurewebsites.net/subcategorias/tipos-conta/{ modelParameter.AccountTypeId}");
@@ -130,17 +119,19 @@
             model.DatePayment = DateTime.SpecifyKind(model.DatePayment.Value, DateTimeKind.Utc);
     }
 
-    private async Task DeleteTransaction()
+    private async Task OpenDialogDelete()
     {
-        using var response =  await Http.DeleteAsync($"https://financial-manager.azurewebsites.net/transaction-order/{model.Id}");
+        var parameters = new DialogParameters();
+        parameters.Add("IdLancamento", model.Id.Value);
+        var dialog = await DialogService.ShowAsync<ModalDelete>("Excluir", parameters);
 
-        if (response.IsSuccessStatusCode)
+        var result = await dialog.Result;
+        var response = result.Data as HttpResponseMessage ?? null;
+        if (response != null && response.IsSuccessStatusCode)
         {
-            Snackbar.Add("Transação excluída com sucesso.", Severity.Success);
-            dialogDelete = false;
+            dialog.Close();
+            MudDialog.Close();
         }
-        else
-            Snackbar.Add("Erro ao alterado transação", Severity.Error);
     }
     
 }

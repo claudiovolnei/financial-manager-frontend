@@ -64,9 +64,9 @@
                              </MudItem>
                              <!-- Terceira coluna com texto -->
                              <MudItem xs="4" sm="4"  style="text-align: right;">
-                                 <MudText Typo="Typo.body1" Style="@($"color:{colorValue(transaction.ValuePayment)};")">@($"R$ {@transaction.ValuePayment:###0.00}")</MudText>
-                             </MudItem>                        
-                              
+                                 <MudText Typo="Typo.body1" Style="@($"color:{colorValue(transaction.ValuePayment)};")">@($"R$ {@transaction.ValuePayment:###0.00}")
+                                 </MudText>
+                             </MudItem>
                             </MudGrid>
                             </MudCardContent>
                         </MudCard>
@@ -81,7 +81,6 @@
     [CascadingParameter]
     public int AccountTypeIdSelect { get; set; }
     private TransactionOrderReponse[]? Transactions;
-    @* MudMessageBox? mbox { get; set; } *@
     HttpResponseMessage? response;
     private double Total;
     public HashSet<TypeCard> ValuesTypeCard { get; set; } = Enum.GetValues<TypeCard>().ToHashSet();
@@ -89,8 +88,6 @@
     public int MonthValue;
     public int YearValue;
     MudBlazor.Utilities.MudColor colorValue(double valuePayment) => valuePayment > 0 ? Theme.Palette.Success : Theme.Palette.Error;
-    private bool _sortNameByLength;
-    private List<string> _events = new();
     
     protected override async Task OnInitializedAsync()    
     {
@@ -140,6 +137,11 @@
             await OnInitializedAsync();
         }            
    }
+    public async Task CloseDialog()
+    {
+        await OnInitializedAsync();
+    }
+
     private async Task EditTransaction(TransactionOrderReponse transactionOrderReponse)
     {
         var parameters = new DialogParameters();
@@ -155,9 +157,12 @@
                 DatePayment = transactionOrderReponse.DatePayment,
                 AccountTypeId = AccountTypeIdSelect
             });
-        var dialog = await DialogService.Show<CreateEditForm>("Alterar transação", parameters,options).Result;
 
-        response = dialog.Data as HttpResponseMessage ?? null;
+        var dialog = await DialogService.ShowAsync<CreateEditForm>("Alterar transação", parameters,options);
+
+        var result = await dialog.Result;
+
+        response = result.Data as HttpResponseMessage ?? null;
 
         if (response != null) {
            if(response.IsSuccessStatusCode) {
@@ -168,6 +173,11 @@
             }
 
            await OnInitializedAsync();
+        } 
+        else 
+        {
+            await OnInitializedAsync();
+            dialog.Close();
         }
     }
 }
