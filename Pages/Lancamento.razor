@@ -1,4 +1,4 @@
-﻿@page "/historico"
+﻿@page "/lancamento"
 @using FinancialManager.Web.Components.SubCategory.Model
 @using FinancialManager.Web.Components.Transaction.Model
 @inject HttpClient Http
@@ -9,7 +9,7 @@
 @inject IDialogService DialogService
 @using FinancialManager.Web.Components.Shared
 
-<PageTitle>Historico</PageTitle>
+<PageTitle>Lancamentos</PageTitle>
 <br>
 <MudGrid Spacing="2" Justify="Justify.Center">
     <MonthYear @bind-YearValue="YearValue" MonthValueChanged="HandleValueChanged"/>
